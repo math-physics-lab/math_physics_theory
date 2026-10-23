@@ -1,10 +1,16 @@
-name = "math_physics_theory"
+name = "MathPhysicsTheory"
 version = "0.1.0"
 defaultTargets = ["MathPhysicsTheory"]
+testDriver = "tests"
 
 [[lean_lib]]
 name = "MathPhysicsTheory"
-srcDir = "src"
+leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false }
+
+[[lean_lib]]
+name = "tests"
+globs = ["tests.+"]
+leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false }
 
 [[require]]
 name = "mathlib"
