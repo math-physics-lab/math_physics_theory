@@ -1,0 +1,58 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let an in-progress deployment finish, but skip queued runs superseded by newer ones.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build library
+        uses: leanprover/lean-action@v1
+        with:
+          use-mathlib-cache: true
+          test: false
+      # doc-gen4 and its dependencies, plus the Lean core part of the doc
+      # database, depend only on the toolchain and the doc-gen4 version.
+      - name: Cache doc-gen4 build
+        uses: actions/cache@v4
+        with:
+          path: |
+            .lake/packages/doc-gen4
+            .lake/packages/MD4Lean
+            .lake/packages/BibtexQuery
+            .lake/packages/UnicodeBasic
+            .lake/packages/leansqlite
+            docbuild/.lake/build/core-docs.db
+          key: docgen-${{ runner.os }}-${{ hashFiles('lean-toolchain', 'docbuild/lean-toolchain', 'docbuild/lake-manifest.json') }}
+      - name: Generate docs
+        run: python3 docbuild/build_docs.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docbuild/.lake/build/doc
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
