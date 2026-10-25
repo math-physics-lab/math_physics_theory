@@ -5,12 +5,12 @@ testDriver = "tests"
 
 [[lean_lib]]
 name = "MathPhysicsTheory"
-leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false }
+leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false, weak.linter.argParens = true }
 
 [[lean_lib]]
 name = "tests"
 globs = ["tests.+"]
-leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false }
+leanOptions = { weak.linter.mathlibStandardSet = true, weak.linter.style.header = false, weak.linter.argParens = true }
 
 [[require]]
 name = "mathlib"
