@@ -27,7 +27,7 @@ noncomputable def operator (p q : ℝ → ℝ) (y : ℝ → ℝ) : ℝ → ℝ :
   fun x => deriv (fun t => p (t) * deriv (y) (t)) (x) + q (x) * y (x)
 
 /-- Expanded form of the Sturm-Liouville operator: `L y = p y'' + p' y' + q y`. -/
-theorem operator_eq {p q y : ℝ → ℝ} {x : ℝ} (hp : DifferentiableAt (ℝ) (p) (x))
+theorem operator_expandable {p q y : ℝ → ℝ} {x : ℝ} (hp : DifferentiableAt (ℝ) (p) (x))
     (hy : DifferentiableAt (ℝ) (deriv (y)) (x)) :
     operator (p) (q) (y) (x) =
       p (x) * deriv (deriv (y)) (x) + deriv (p) (x) * deriv (y) (x) + q (x) * y (x) := by
