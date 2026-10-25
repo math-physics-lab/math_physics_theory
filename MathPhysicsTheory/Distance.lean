@@ -2,6 +2,9 @@ module
 
 public import Mathlib
 
+-- Linter: requires function arguments to be written in parentheses, `f (x)`.
+import MathPhysicsTheory.Linter.ArgParens
+
 /-!
 # Euclidean distance in the plane
 -/
