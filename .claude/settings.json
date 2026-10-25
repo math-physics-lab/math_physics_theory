@@ -1,0 +1,24 @@
+{
+  "extraKnownMarketplaces": {
+    "leanprover": {
+      "source": {
+        "source": "settings",
+        "name": "leanprover",
+        "plugins": [
+          {
+            "name": "lean",
+            "source": {
+              "source": "github",
+              "repo": "leanprover/skills",
+              "ref": "main",
+              "sha": "7d3da0282e7b724b07620e45cf212f2e05e19334"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "enabledPlugins": {
+    "lean@leanprover": true
+  }
+}
