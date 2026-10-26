@@ -1,0 +1,71 @@
+---
+// The page shell: header, module navigation and footer, styled after
+// https://mr-leshiy-blog.web.app.
+import 'katex/dist/katex.min.css';
+import '../styles/global.css';
+import '../styles/docs.css';
+import Header from '../components/Header.astro';
+import ModuleTree from '../components/ModuleTree.astro';
+import { library, REPO_URL, url } from '../lib/docs';
+
+interface Props {
+	title: string;
+	description: string;
+	/** The module the page documents, highlighted in the navigation. */
+	module?: string;
+	/** Whether to show the module navigation. */
+	sidebar?: boolean;
+}
+
+const { title, description, module, sidebar = true } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+		<meta name="generator" content={Astro.generator} />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		/>
+		<title>{title}</title>
+		<meta name="description" content={description} />
+	</head>
+	<body>
+		<Header section={module ? 'modules' : 'home'} />
+		<div class:list={['layout', { 'no-sidebar': !sidebar }]}>
+			{
+				sidebar && (
+					<>
+						<aside class="sidebar">
+							<details open>
+								<summary>Modules</summary>
+								<nav aria-label="Modules">
+									<ModuleTree current={module} />
+								</nav>
+							</details>
+						</aside>
+						<script is:inline>
+							// On narrow screens the module list sits above the content, so start it collapsed.
+							if (matchMedia('(max-width: 960px)').matches) document.querySelector('.sidebar details').open = false;
+						</script>
+					</>
+				)
+			}
+			<main>
+				<slot />
+			</main>
+		</div>
+		<footer class="site-footer">
+			<span>
+				API docs for <a href={REPO_URL}>{library}</a>, generated with{' '}
+				<a href="https://github.com/leanprover/doc-gen4">doc-gen4</a>.
+			</span>
+		</footer>
+	</body>
+</html>

@@ -12,3 +12,9 @@ rev = "v4.35.0"
 [[require]]
 name = "MathPhysicsTheory"
 path = "../"
+
+# Writes the doc database to JSON for the site in `docs/site` (see `build_docs.py`).
+[[lean_exe]]
+name = "export-docs"
+root = "ExportDocs"
+supportInterpreter = true
