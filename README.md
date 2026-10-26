@@ -34,7 +34,8 @@ python3 -m http.server -d docbuild/.lake/build/doc
 ```
 
 `docbuild/` is a separate Lake project so the main package doesn't depend on
-doc-gen4. Only `MathPhysicsTheory` (and Lean core) is documented, not Mathlib.
+doc-gen4. Only `MathPhysicsTheory` is documented (without its linters), not
+Mathlib or Lean core.
 When bumping the Lean/Mathlib version, update `rev` in
 `docbuild/lakefile.toml` and `docbuild/lean-toolchain` to match, then run
 `MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4` in `docbuild/`.
