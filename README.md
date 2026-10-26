@@ -13,9 +13,7 @@ lake build --wfail   # build, failing on any warning or linter finding
 
 ## Tests
 
-Tests live in `tests/` as the package's test driver library. Each file
-imports the library.
-Run with:
+Tests live in `tests/`:
 
 ```sh
 lake test --wfail
@@ -23,52 +21,28 @@ lake test --wfail
 
 ## Documentation
 
-The API docs are a static [Astro](https://astro.build) site in `docs/site/`,
-published to GitHub Pages on every push to `main` and built (not deployed) on
-pull requests (see `.github/workflows/docs.yml`). They are built in two steps:
+API docs are an [Astro](https://astro.build) site in `docs/site/`, deployed to
+GitHub Pages from `main` (`.github/workflows/docs.yml`). `docbuild/` (a separate
+Lake project) runs [doc-gen4](https://github.com/leanprover/doc-gen4) and exports
+`docs.json`; the site renders it with the module notes. The front page is
+`docs/ROOT.md`.
 
-1. `docbuild/build_docs.py` runs [doc-gen4](https://github.com/leanprover/doc-gen4)
-   on the library's modules to fill its database, then `docbuild/ExportDocs.lean`
-   exports that database to `docbuild/.lake/build/docs.json`.
-2. The site renders `docs.json`, plus the modules' notes (see below). Its
-   front page is `docs/ROOT.md`, a description of the library and its docs.
-
-To build them locally (needs Node.js, version in `docs/site/.node-version`):
+Build locally (Node.js version in `docs/site/.node-version`):
 
 ```sh
 lake exe cache get
 python3 docbuild/build_docs.py
-cd docs/site
-npm ci
-npm run dev       # serve with live reload at http://localhost:4321
-npm run build     # or build the site into docs/site/dist
+cd docs/site && npm ci
+npm run dev       # live reload at http://localhost:4321; or `npm run build`
 ```
 
-`docbuild/` is a separate Lake project so the main package doesn't depend on
-doc-gen4. Only `MathPhysicsTheory` is documented (without its linters), not
-Mathlib or Lean core; names from those link to the Mathlib docs.
-When bumping the Lean/Mathlib version, update `rev` in
-`docbuild/lakefile.toml` and `docbuild/lean-toolchain` to match, then run
-`MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4` in `docbuild/`.
-doc-gen4's database format is internal, so also check that
-`docbuild/ExportDocs.lean` still builds and the docs still render.
+When bumping Lean/Mathlib, match `rev` in `docbuild/lakefile.toml` and
+`docbuild/lean-toolchain`, run `MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4`
+in `docbuild/`, and check the docs still render.
 
 ### Notes
 
-A module's page can be extended with notes: descriptions, analysis,
-derivations and so on. Write them in Markdown in a `NOTE.md` in the folder
-named after the module, next to its source, e.g.
-`MathPhysicsTheory/SturmLiouville/NOTE.md` for `MathPhysicsTheory.SturmLiouville`
-(`MathPhysicsTheory/SturmLiouville.lean`). That folder also holds the module's
-submodules, such as `MathPhysicsTheory/SturmLiouville/Foo.lean` for
-`MathPhysicsTheory.SturmLiouville.Foo`, whose notes go in
-`MathPhysicsTheory/SturmLiouville/Foo/NOTE.md`. Notes are shown after the
-module docstring.
-Notes, like docstrings, support:
-
-- LaTeX math: `$...$` inline and `$$...$$` for display
-- names of declarations in backticks, such as `` `operator_expanded` ``,
-  which link to their docs (resolved in the module's namespace)
-- code blocks, highlighted as Lean unless another language is given
-
-The build fails on a `NOTE.md` that doesn't match any documented module.
+Notes for module `A.B` go in `A/B/NOTE.md`, next to `A/B.lean`. They're shown
+after the module docstring and support `$...$`/`$$...$$` math, `` `name` `` links
+to declarations, and Lean code blocks. A `NOTE.md` without a matching module
+fails the build.
