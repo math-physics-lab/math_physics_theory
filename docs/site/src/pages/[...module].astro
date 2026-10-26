@@ -1,0 +1,114 @@
+---
+// A module's page: its docstring, optional notes, then its declarations grouped by kind.
+import Declaration from '../components/Declaration.astro';
+import Markdown from '../components/Markdown.astro';
+import ModuleIndex from '../components/ModuleIndex.astro';
+import Base from '../layouts/Base.astro';
+import {
+	declarations,
+	importUrl,
+	library,
+	moduleDocs,
+	moduleTitle,
+	modulePath,
+	modules,
+	namespaces,
+	notes,
+	orphanNotes,
+	type Kind,
+	type Module,
+} from '../lib/docs';
+
+export function getStaticPaths() {
+	const orphans = orphanNotes();
+	if (orphans.length > 0) {
+		throw new Error(`Notes files without a matching module: ${orphans.join(', ')}`);
+	}
+	return modules.map((mod) => ({ params: { module: modulePath(mod.name).slice(0, -1) }, props: { mod } }));
+}
+
+interface Props {
+	mod: Module;
+}
+
+const { mod } = Astro.props;
+
+// Sections in page order; kinds not listed don't occur in the library.
+const groups: { title: string; kinds: Kind[] }[] = [
+	{ title: 'Structures', kinds: ['structure'] },
+	{ title: 'Classes', kinds: ['class'] },
+	{ title: 'Inductive types', kinds: ['inductive'] },
+	{ title: 'Definitions', kinds: ['def', 'opaque'] },
+	{ title: 'Instances', kinds: ['instance'] },
+	{ title: 'Theorems', kinds: ['theorem'] },
+	{ title: 'Axioms', kinds: ['axiom'] },
+];
+const decls = declarations(mod);
+const docs = moduleDocs(mod);
+const moduleNotes = notes(mod.name);
+// Names in the module docs and notes resolve in the namespace of the module's declarations.
+const scope = decls[0] ? namespaces(decls[0].name)[0] : library;
+const imports = mod.imports
+	.filter((i) => i !== 'Init')
+	.map((name) => ({ name, href: importUrl(name) }))
+	.filter((i) => i.href);
+const title = moduleTitle(mod);
+---
+
+<Base title={`${mod.name} — ${library}`} description={title ?? `API docs for ${mod.name}`} module={mod.name}>
+	<span class="page-kicker">Module</span>
+	<h1 class="page-title">{mod.name}</h1>
+	<div class="page-meta">
+		{mod.sourceUrl && <a href={mod.sourceUrl}>Source</a>}
+		{
+			imports.length > 0 && (
+				<>
+					{mod.sourceUrl && ' · '}Imports{' '}
+					<ul class="imports">
+						{imports.map((i) => (
+							<li>
+								<a href={i.href}>{i.name}</a>
+							</li>
+						))}
+					</ul>
+				</>
+			)
+		}
+	</div>
+
+	{docs.map((d) => <Markdown markdown={d.doc} scope={scope} headingShift={1} />)}
+
+	{
+		moduleNotes && (
+			<section class="notes" id="notes">
+				<span class="page-kicker">Notes</span>
+				<Markdown markdown={moduleNotes} scope={scope} headingShift={1} />
+			</section>
+		)
+	}
+
+	{
+		mod.name === library && (
+			<section class="kind-group">
+				<h2>Modules</h2>
+				<ModuleIndex parent={library} />
+			</section>
+		)
+	}
+
+	{
+		groups.map(({ title, kinds }) => {
+			const group = decls.filter((d) => kinds.includes(d.kind));
+			return (
+				group.length > 0 && (
+					<section class="kind-group">
+						<h2>{title}</h2>
+						{group.map((decl) => (
+							<Declaration decl={decl} mod={mod} />
+						))}
+					</section>
+				)
+			);
+		})
+	}
+</Base>

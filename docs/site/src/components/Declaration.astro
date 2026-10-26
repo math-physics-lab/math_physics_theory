@@ -1,0 +1,120 @@
+---
+// One declaration: its signature, docstring and source link, plus the parts its kind has
+// (constructors, fields, parents, instances).
+import {
+	constUrl,
+	instancesFor,
+	namespaces,
+	relativeName,
+	sourceLink,
+	type Declaration,
+	type Module,
+} from '../lib/docs';
+import Code from './Code.astro';
+import Markdown from './Markdown.astro';
+import Signature from './Signature.astro';
+
+interface Props {
+	decl: Declaration;
+	mod: Module;
+}
+
+const { decl, mod } = Astro.props;
+const ns = namespaces(decl.name)[0];
+const source = sourceLink(mod, decl);
+const instances = instancesFor(decl);
+const attrs = (decl.attrs ?? []).filter((a) => !['instance_reducible', 'reducible', 'inline'].includes(a));
+const fields = decl.fields ?? [];
+---
+
+<article class:list={['decl', `kind-${decl.kind}`]} id={decl.name}>
+	<header class="decl-header">
+		<span class="decl-kind">{decl.kindDescription}</span>
+		{decl.sorried && <span class="decl-badge warning" title="Uses sorry">sorry</span>}
+		{attrs.map((a) => <span class="decl-badge">@[{a}]</span>)}
+		{source && <a class="decl-source" href={source}>source</a>}
+	</header>
+	<Signature args={decl.args} type={decl.type}><a class="decl-name" href={`#${encodeURIComponent(decl.name)}`}>{ns && <span class="decl-namespace">{ns}.</span>}<strong>{relativeName(decl.name, ns)}</strong></a></Signature>
+	{decl.doc && <Markdown markdown={decl.doc} scope={decl.name} headingShift={3} class="decl-doc" />}
+
+	{
+		decl.parents && decl.parents.length > 0 && (
+			<p class="decl-extends">
+				Extends
+				{decl.parents.map((p, i) => (
+					<>
+						{i > 0 && ', '}
+						<code>
+							<Code code={p.type} />
+						</code>
+					</>
+				))}
+			</p>
+		)
+	}
+
+	{
+		decl.ctor && (
+			<div class="decl-section">
+				<h4>Constructor</h4>
+				<div class="member" id={decl.ctor.name}>
+					<Signature args={[]} type={decl.ctor.type}><span class="member-name">{relativeName(decl.ctor.name, ns)}</span></Signature>
+					{decl.ctor.doc && <Markdown markdown={decl.ctor.doc} scope={decl.name} headingShift={4} />}
+				</div>
+			</div>
+		)
+	}
+
+	{
+		fields.length > 0 && (
+			<div class="decl-section">
+				<h4>Fields</h4>
+				{fields.map((f) => (
+					<div class:list={['member', { inherited: !f.isDirect }]} id={f.isDirect ? f.name : undefined}>
+						<Signature args={f.args} type={f.type}>{f.isDirect ? <span class="member-name">{relativeName(f.name, decl.name)}</span> : <a class="member-name" href={constUrl(f.name)} title={`Inherited: ${f.name}`}>{relativeName(f.name, namespaces(f.name)[0])}</a>}</Signature>
+						{f.doc && <Markdown markdown={f.doc} scope={decl.name} headingShift={4} />}
+					</div>
+				))}
+			</div>
+		)
+	}
+
+	{
+		decl.ctors && decl.ctors.length > 0 && (
+			<div class="decl-section">
+				<h4>Constructors</h4>
+				{decl.ctors.map((c) => (
+					<div class="member" id={c.name}>
+						<Signature args={c.args} type={c.type}><span class="member-name">{relativeName(c.name, decl.name)}</span></Signature>
+						{c.doc && <Markdown markdown={c.doc} scope={decl.name} headingShift={4} />}
+					</div>
+				))}
+			</div>
+		)
+	}
+
+	{
+		decl.kind === 'instance' && decl.className && (
+			<p class="decl-extends">
+				Instance of <a href={constUrl(decl.className)}><code>{decl.className}</code></a>
+			</p>
+		)
+	}
+
+	{
+		instances.length > 0 && (
+			<div class="decl-section">
+				<h4>Instances</h4>
+				<ul class="instances">
+					{instances.map((i) => (
+						<li>
+							<a href={constUrl(i.name)}>
+								<code>{i.name}</code>
+							</a>
+						</li>
+					))}
+				</ul>
+			</div>
+		)
+	}
+</article>

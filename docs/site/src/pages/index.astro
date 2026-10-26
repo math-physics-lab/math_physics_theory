@@ -1,0 +1,10 @@
+---
+// The front page: `docs/ROOT.md`, a description of the library and its docs.
+import Markdown from '../components/Markdown.astro';
+import Base from '../layouts/Base.astro';
+import { homePage, library } from '../lib/docs';
+---
+
+<Base title={`${library} API docs`} description={`API documentation for the ${library} Lean library.`} sidebar={false}>
+	<Markdown markdown={homePage()} scope={library} headingShift={0} class="home" />
+</Base>
