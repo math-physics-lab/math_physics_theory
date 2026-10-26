@@ -2,8 +2,7 @@ name: Docs
 
 on:
   push:
-    # TODO: drop the PR branch before merging; it's here to try out the deployment.
-    branches: [main, claude/github-issue-3-dlebpt]
+    branches: [main]
   # Build (but don't deploy) on PRs, so a broken docs build is caught before merge.
   pull_request:
   workflow_dispatch:
