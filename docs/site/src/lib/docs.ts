@@ -8,6 +8,7 @@ import path from 'node:path';
 const REPO_ROOT = path.resolve(process.cwd(), '../..');
 const DOCS_JSON = process.env.DOCS_JSON ?? path.join(REPO_ROOT, 'docbuild/.lake/build/docs.json');
 const NOTES_DIR = process.env.DOCS_NOTES ?? path.join(REPO_ROOT, 'docs/notes');
+const HOME_PAGE = path.join(REPO_ROOT, 'DOCS.md');
 
 /** The Mathlib docs, which also cover Lean core. */
 export const MATHLIB_DOCS = 'https://leanprover-community.github.io/mathlib4_docs/';
@@ -147,6 +148,16 @@ export function namespaces(name: string): string[] {
 	const result = [];
 	for (let i = parts.length - 1; i >= 0; i--) result.push(parts.slice(0, i).join('.'));
 	return result;
+}
+
+/** The front page's content: `DOCS.md` at the root of the repository. */
+export function homePage(): string {
+	return fs.readFileSync(HOME_PAGE, 'utf-8');
+}
+
+/** The title of a module: the first heading of its docstring. */
+export function moduleTitle(mod: Module): string | undefined {
+	return moduleDocs(mod)[0]?.doc.match(/^#\s+(.+)$/m)?.[1];
 }
 
 // Per-module notes: `docs/notes/A/B.md` for module `A.B`.

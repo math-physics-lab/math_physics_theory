@@ -30,7 +30,8 @@ pull requests (see `.github/workflows/docs.yml`). They are built in two steps:
 1. `docbuild/build_docs.py` runs [doc-gen4](https://github.com/leanprover/doc-gen4)
    on the library's modules to fill its database, then `docbuild/ExportDocs.lean`
    exports that database to `docbuild/.lake/build/docs.json`.
-2. The site renders `docs.json`, plus the notes in `docs/notes/`.
+2. The site renders `docs.json`, plus the notes in `docs/notes/`. Its front
+   page is `DOCS.md`, a description of the library and its docs.
 
 To build them locally (needs Node.js, version in `docs/site/.node-version`):
 

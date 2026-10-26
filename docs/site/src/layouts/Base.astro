@@ -13,9 +13,11 @@ interface Props {
 	description: string;
 	/** The module the page documents, highlighted in the navigation. */
 	module?: string;
+	/** Whether to show the module navigation. */
+	sidebar?: boolean;
 }
 
-const { title, description, module } = Astro.props;
+const { title, description, module, sidebar = true } = Astro.props;
 ---
 
 <!doctype html>
@@ -40,7 +42,6 @@ const { title, description, module } = Astro.props;
 				<a href={url('')} class="site-title">{library}</a>
 				<Search />
 				<div class="header-links">
-					<a href="https://mr-leshiy-blog.web.app">Blog</a>
 					<a href={REPO_URL} class="icon-link">
 						<span class="sr-only">Source on GitHub</span>
 						<svg viewBox="0 0 16 16" aria-hidden="true" width="22" height="22">
@@ -53,26 +54,32 @@ const { title, description, module } = Astro.props;
 				</div>
 			</nav>
 		</header>
-		<div class="layout">
-			<aside class="sidebar">
-				<details open>
-					<summary>Modules</summary>
-					<nav aria-label="Modules">
-						<ModuleTree current={module} />
-					</nav>
-				</details>
-			</aside>
-			<script is:inline>
-				// On narrow screens the module list sits above the content, so start it collapsed.
-				if (matchMedia('(max-width: 960px)').matches) document.querySelector('.sidebar details').open = false;
-			</script>
+		<div class:list={['layout', { 'no-sidebar': !sidebar }]}>
+			{
+				sidebar && (
+					<>
+						<aside class="sidebar">
+							<details open>
+								<summary>Modules</summary>
+								<nav aria-label="Modules">
+									<ModuleTree current={module} />
+								</nav>
+							</details>
+						</aside>
+						<script is:inline>
+							// On narrow screens the module list sits above the content, so start it collapsed.
+							if (matchMedia('(max-width: 960px)').matches) document.querySelector('.sidebar details').open = false;
+						</script>
+					</>
+				)
+			}
 			<main>
 				<slot />
 			</main>
 		</div>
 		<footer class="site-footer">
 			<span>
-				API docs for <a href={REPO_URL}>{library}</a>, generated with
+				API docs for <a href={REPO_URL}>{library}</a>, generated with{' '}
 				<a href="https://github.com/leanprover/doc-gen4">doc-gen4</a>.
 			</span>
 		</footer>

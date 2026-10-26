@@ -2,12 +2,14 @@
 // A module's page: its docstring, optional notes, then its declarations grouped by kind.
 import Declaration from '../components/Declaration.astro';
 import Markdown from '../components/Markdown.astro';
+import ModuleIndex from '../components/ModuleIndex.astro';
 import Base from '../layouts/Base.astro';
 import {
 	declarations,
 	importUrl,
 	library,
 	moduleDocs,
+	moduleTitle,
 	modulePath,
 	modules,
 	namespaces,
@@ -50,7 +52,7 @@ const imports = mod.imports
 	.filter((i) => i !== 'Init')
 	.map((name) => ({ name, href: importUrl(name) }))
 	.filter((i) => i.href);
-const title = docs[0]?.doc.match(/^#\s+(.+)$/m)?.[1];
+const title = moduleTitle(mod);
 ---
 
 <Base title={`${mod.name} — ${library}`} description={title ?? `API docs for ${mod.name}`} module={mod.name}>
@@ -81,6 +83,15 @@ const title = docs[0]?.doc.match(/^#\s+(.+)$/m)?.[1];
 			<section class="notes" id="notes">
 				<span class="page-kicker">Notes</span>
 				<Markdown markdown={moduleNotes} scope={scope} headingShift={1} />
+			</section>
+		)
+	}
+
+	{
+		mod.name === library && (
+			<section class="kind-group">
+				<h2>Modules</h2>
+				<ModuleIndex parent={library} />
 			</section>
 		)
 	}

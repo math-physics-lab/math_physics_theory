@@ -1,0 +1,44 @@
+---
+// The modules below `parent`, nested by name, each with its title and size.
+import { declarations, moduleTitle, modulePath, modules, notes, relativeName, url } from '../lib/docs';
+
+interface Props {
+	parent: string;
+}
+
+const { parent } = Astro.props;
+const depth = parent.split('.').length + 1;
+// Every prefix of a module name is a node, documented or not.
+const children = [
+	...new Set(
+		modules
+			.map((m) => m.name.split('.'))
+			.filter((parts) => parts.length >= depth && parts.slice(0, depth - 1).join('.') === parent)
+			.map((parts) => parts.slice(0, depth).join('.')),
+	),
+].sort();
+---
+
+{
+	children.length > 0 && (
+		<ul class="module-index">
+			{children.map((name) => {
+				const mod = modules.find((m) => m.name === name);
+				const count = mod ? declarations(mod).length : 0;
+				return (
+					<li>
+						{mod ? <a href={url(modulePath(name))}>{relativeName(name, parent)}</a> : <span>{relativeName(name, parent)}</span>}
+						{mod && (
+							<p>
+								{moduleTitle(mod) ?? name}
+								{count > 0 && <> · {count} declaration{count === 1 ? '' : 's'}</>}
+								{notes(name) !== undefined && <> · notes</>}
+							</p>
+						)}
+						<Astro.self parent={name} />
+					</li>
+				);
+			})}
+		</ul>
+	)
+}

@@ -452,28 +452,50 @@
 	text-decoration: none;
 }
 
-/* Library index */
+/* Module index, on the library's root module page */
 
 .module-index {
 	padding: 0;
 	list-style: none;
 }
-.module-index li {
+.module-index > li {
 	margin: 1em 0;
 	padding: 1em 1.4em;
 	border: 1px solid var(--border-color);
 	border-radius: 10px;
 	background: var(--bg-card);
 }
-.module-index a {
+.module-index .module-index > li {
+	margin: 0.75em 0 0;
+	padding: 0.25em 0 0 1em;
+	border: none;
+	border-left: 1px solid var(--border-color);
+	border-radius: 0;
+	background: none;
+}
+.module-index a,
+.module-index span {
 	font-family: var(--mono);
 	font-size: 0.9em;
 	font-weight: 600;
 	text-decoration: none;
 }
+.module-index span {
+	color: rgb(var(--gray));
+}
 .module-index p {
 	margin: 0.25em 0 0;
 	font-size: 0.85em;
+}
+
+/* Front page */
+
+.layout.no-sidebar {
+	grid-template-columns: minmax(0, 960px);
+}
+.home h2 {
+	margin-top: 1.5em;
+	font-size: 1.75em;
 }
 
 @media (max-width: 960px) {
