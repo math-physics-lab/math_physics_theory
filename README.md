@@ -30,8 +30,8 @@ pull requests (see `.github/workflows/docs.yml`). They are built in two steps:
 1. `docbuild/build_docs.py` runs [doc-gen4](https://github.com/leanprover/doc-gen4)
    on the library's modules to fill its database, then `docbuild/ExportDocs.lean`
    exports that database to `docbuild/.lake/build/docs.json`.
-2. The site renders `docs.json`, plus the modules' notes (see below). Its
-   front page is `docs/ROOT.md`, a description of the library and its docs.
+2. The site renders `docs.json`, plus the notes in `docs/notes/`. Its front
+   page is `docs/ROOT.md`, a description of the library and its docs.
 
 To build them locally (needs Node.js, version in `docs/site/.node-version`):
 
@@ -56,14 +56,9 @@ doc-gen4's database format is internal, so also check that
 ### Notes
 
 A module's page can be extended with notes: descriptions, analysis,
-derivations and so on. Write them in Markdown in a `NOTE.md` in the folder
-named after the module, next to its source, e.g.
-`MathPhysicsTheory/SturmLiouville/NOTE.md` for `MathPhysicsTheory.SturmLiouville`
-(`MathPhysicsTheory/SturmLiouville.lean`). That folder also holds the module's
-submodules, such as `MathPhysicsTheory/SturmLiouville/Foo.lean` for
-`MathPhysicsTheory.SturmLiouville.Foo`, whose notes go in
-`MathPhysicsTheory/SturmLiouville/Foo/NOTE.md`. Notes are shown after the
-module docstring.
+derivations and so on. Write them in Markdown at the path mirroring the
+module, e.g. `docs/notes/MathPhysicsTheory/SturmLiouville.md` for
+`MathPhysicsTheory.SturmLiouville`. They're shown after the module docstring.
 Notes, like docstrings, support:
 
 - LaTeX math: `$...$` inline and `$$...$$` for display
@@ -71,4 +66,4 @@ Notes, like docstrings, support:
   which link to their docs (resolved in the module's namespace)
 - code blocks, highlighted as Lean unless another language is given
 
-The build fails on a `NOTE.md` that doesn't match any documented module.
+The build fails on a notes file that doesn't match any documented module.

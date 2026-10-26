@@ -7,6 +7,7 @@ import path from 'node:path';
 // location changes when Astro bundles it.
 const REPO_ROOT = path.resolve(process.cwd(), '../..');
 const DOCS_JSON = process.env.DOCS_JSON ?? path.join(REPO_ROOT, 'docbuild/.lake/build/docs.json');
+const NOTES_DIR = process.env.DOCS_NOTES ?? path.join(REPO_ROOT, 'docs/notes');
 const HOME_PAGE = path.join(REPO_ROOT, 'docs/ROOT.md');
 
 /** The Mathlib docs, which also cover Lean core. */
@@ -159,12 +160,10 @@ export function moduleTitle(mod: Module): string | undefined {
 	return moduleDocs(mod)[0]?.doc.match(/^#\s+(.+)$/m)?.[1];
 }
 
-// Per-module notes: `A/B/NOTE.md` for module `A.B`, beside its source `A/B.lean`.
-
-const NOTES_FILE = 'NOTE.md';
+// Per-module notes: `docs/notes/A/B.md` for module `A.B`.
 
 function notesFile(module: string): string {
-	return path.join(REPO_ROOT, ...module.split('.'), NOTES_FILE);
+	return path.join(NOTES_DIR, ...module.split('.')) + '.md';
 }
 
 export function notes(module: string): string | undefined {
@@ -172,17 +171,13 @@ export function notes(module: string): string | undefined {
 	return fs.existsSync(file) ? fs.readFileSync(file, 'utf-8') : undefined;
 }
 
-/** Notes files that don't belong to any documented module, most likely misplaced. */
+/** Notes files that don't belong to any documented module, most likely misnamed. */
 export function orphanNotes(): string[] {
+	if (!fs.existsSync(NOTES_DIR)) return [];
 	const expected = new Set(modules.map((m) => path.resolve(notesFile(m.name))));
-	const libraryDirs = new Set(modules.map((m) => path.join(REPO_ROOT, m.name.split('.')[0])));
-	return [...libraryDirs]
-		.filter((dir) => fs.existsSync(dir))
-		.flatMap((dir) =>
-			(fs.readdirSync(dir, { recursive: true, encoding: 'utf-8' }) as string[])
-				.filter((f) => path.basename(f) === NOTES_FILE)
-				.map((f) => path.resolve(dir, f)),
-		)
+	return (fs.readdirSync(NOTES_DIR, { recursive: true, encoding: 'utf-8' }) as string[])
+		.filter((f) => f.endsWith('.md'))
+		.map((f) => path.resolve(NOTES_DIR, f))
 		.filter((f) => !expected.has(f))
 		.map((f) => path.relative(REPO_ROOT, f));
 }
