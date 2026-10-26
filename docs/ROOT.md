@@ -45,4 +45,4 @@ $$
 
 The source, build instructions and contribution notes are in the
 [repository](https://github.com/math-physics-lab/math_physics_theory). This
-page is `DOCS.md` at the root of the repository.
+page is `docs/ROOT.md` in the repository.
