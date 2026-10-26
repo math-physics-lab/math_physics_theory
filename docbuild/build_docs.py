@@ -97,6 +97,8 @@ def link_mathlib_imports() -> None:
 
 def main() -> None:
     run("lake", "build", "MathPhysicsTheory", "doc-gen4")
+    # doc-gen4 doesn't create the directory it puts its database in.
+    (DOCBUILD / BUILD_DIR).mkdir(parents=True, exist_ok=True)
 
     if not (DOCBUILD / BUILD_DIR / CORE_DB).exists():
         build_core_db()
