@@ -2,10 +2,10 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const SITE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const REPO_ROOT = path.resolve(SITE_ROOT, '../..');
+// Relative to the working directory, `docs/site` (npm runs scripts there): this module's own
+// location changes when Astro bundles it.
+const REPO_ROOT = path.resolve(process.cwd(), '../..');
 const DOCS_JSON = process.env.DOCS_JSON ?? path.join(REPO_ROOT, 'docbuild/.lake/build/docs.json');
 const NOTES_DIR = process.env.DOCS_NOTES ?? path.join(REPO_ROOT, 'docs/notes');
 
