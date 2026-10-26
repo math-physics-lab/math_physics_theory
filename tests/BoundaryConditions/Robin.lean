@@ -19,3 +19,11 @@ example : robin (1) (0) (Real.pi) (Real.sin) = 0 := by
 /-- With `α = 0` the operator is the derivative: `cos'(π) = -sin(π) = 0`. -/
 example : robin (0) (1) (Real.pi) (Real.cos) = 0 := by
   simp [robin]
+
+/-- `exp` satisfies `2 y(0) + 3 y'(0) = 5`. -/
+example : robinCondition (2) (3) (5) (0) (Real.exp) := by
+  norm_num [robinCondition, robin]
+
+/-- `sin` satisfies the homogeneous Dirichlet condition `y(π) = 0`. -/
+example : robinCondition (1) (0) (0) (Real.pi) (Real.sin) := by
+  simp [robinCondition, robin]
