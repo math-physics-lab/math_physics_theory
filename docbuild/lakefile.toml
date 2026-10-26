@@ -1,0 +1,14 @@
+name = "docbuild"
+reservoir = false
+version = "0.1.0"
+packagesDir = "../.lake/packages"
+
+# Keep in sync with `lean-toolchain` and the Mathlib `rev` in `../lakefile.toml`.
+[[require]]
+name = "doc-gen4"
+git = "https://github.com/leanprover/doc-gen4"
+rev = "v4.35.0"
+
+[[require]]
+name = "MathPhysicsTheory"
+path = "../"
