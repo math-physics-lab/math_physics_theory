@@ -6,7 +6,7 @@ import '../styles/global.css';
 import '../styles/docs.css';
 import ModuleTree from '../components/ModuleTree.astro';
 import Search from '../components/Search.astro';
-import { library, REPO_URL, url } from '../lib/docs';
+import { library, modulePath, REPO_URL, url } from '../lib/docs';
 
 interface Props {
 	title: string;
@@ -40,6 +40,10 @@ const { title, description, module, sidebar = true } = Astro.props;
 		<header class="site-header">
 			<nav>
 				<a href={url('')} class="site-title">{library}</a>
+				<div class="internal-links">
+					<a href={url('')} class:list={{ active: !module }} aria-current={!module ? 'page' : undefined}>Home</a>
+					<a href={url(modulePath(library))} class:list={{ active: !!module }}>Modules</a>
+				</div>
 				<Search />
 				<div class="header-links">
 					<a href={REPO_URL} class="icon-link">

@@ -41,6 +41,25 @@
 .site-title:hover {
 	color: var(--accent);
 }
+.internal-links {
+	display: flex;
+	gap: 0.25em;
+}
+.internal-links a {
+	padding: 0.4em 0.75em;
+	border-bottom: 2px solid transparent;
+	color: rgb(var(--gray));
+	text-decoration: none;
+	font-size: 0.95em;
+	transition: color 0.2s ease;
+}
+.internal-links a:hover,
+.internal-links a.active {
+	color: rgb(var(--black));
+}
+.internal-links a.active {
+	border-bottom-color: var(--accent);
+}
 .header-links {
 	display: flex;
 	align-items: center;
@@ -515,18 +534,20 @@
 		pointer-events: auto;
 		cursor: pointer;
 	}
-	.header-links a:not(.icon-link) {
-		display: none;
-	}
 }
 @media (max-width: 720px) {
 	.site-header {
 		padding: 0 1em;
 	}
+	/* "Home" leads to the same page, and the header has no room for both. */
 	.site-title {
-		font-size: 1em;
+		display: none;
+	}
+	.site-header nav {
+		gap: 0.5em;
 	}
 	.search {
+		min-width: 0;
 		margin-left: 0;
 	}
 	.page-title {
