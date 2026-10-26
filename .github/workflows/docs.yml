@@ -2,7 +2,8 @@ name: Docs
 
 on:
   push:
-    branches: [main]
+    # TODO: drop the PR branch before merging; it's here to try out the deployment.
+    branches: [main, claude/github-issue-3-dlebpt]
   workflow_dispatch:
 
 permissions:
