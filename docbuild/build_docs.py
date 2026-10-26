@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
-"""Generate the API docs for the `MathPhysicsTheory` library.
+"""Export the API docs data for the `MathPhysicsTheory` library to JSON.
 
 doc-gen4's `MathPhysicsTheory:docs` Lake facet documents a library together
 with everything it imports, plus Lean core. The library imports all of
 Mathlib, so that would mean documenting Mathlib and Lean as well. Instead,
 this script drives the doc-gen4 executable directly: it fills the doc
-database with our own modules only (skipping the linters in `EXCLUDED`) and
-renders HTML from it. Names from Lean core and Mathlib are shown without
-links, and import links to their modules point to the Mathlib docs, which
-also cover Lean core.
+database with our own modules only (skipping the linters in `EXCLUDED`), then
+`export-docs` (`ExportDocs.lean`) writes that database to JSON for the Astro
+site in `docs/site` to render.
 
-Output: docbuild/.lake/build/doc (serve it over HTTP, e.g.
-`python3 -m http.server -d docbuild/.lake/build/doc`).
+Output: docbuild/.lake/build/docs.json
 """
 
 import os
-import re
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -25,10 +21,10 @@ ROOT = DOCBUILD.parent
 DOCGEN = ROOT / ".lake/packages/doc-gen4/.lake/build/bin/doc-gen4"
 BUILD_DIR = Path(".lake/build")  # relative to DOCBUILD
 DB = "api-docs.db"  # relative to BUILD_DIR
+OUTPUT = "docs.json"  # relative to BUILD_DIR
 LIBRARY = "MathPhysicsTheory"
 # Module prefixes left out of the docs.
 EXCLUDED = ["MathPhysicsTheory.Linter"]
-MATHLIB_DOCS = "https://leanprover-community.github.io/mathlib4_docs/"
 
 
 def run(*args: str) -> None:
@@ -66,30 +62,12 @@ def library_modules() -> list[tuple[str, str]]:
     return modules
 
 
-IMPORTS = re.compile(r"(<summary>Imports</summary><ul>)(.*?)(</ul>)", re.S)
-IMPORT = re.compile(r'<li><a href="(?:\.\./)*\./([^"]*)\.html">([^<]*)</a></li>')
-
-
-def fix_imports(html: str) -> str:
-    """Drop imports of excluded modules and send other packages to the Mathlib docs."""
-
-    def fix_import(m: re.Match[str]) -> str:
-        path, module = m.groups()
-        if module.split(".")[0] == LIBRARY:
-            return m.group(0) if is_documented(module) else ""
-        return f'<li><a href="{MATHLIB_DOCS}{path}.html">{module}</a></li>'
-
-    return IMPORTS.sub(lambda m: m[1] + IMPORT.sub(fix_import, m[2]) + m[3], html)
-
-
 def main() -> None:
-    run("lake", "build", LIBRARY, "doc-gen4")
+    run("lake", "build", LIBRARY, "doc-gen4", "export-docs")
 
     build_dir = DOCBUILD / BUILD_DIR
-    for path in ["doc", "doc-data"]:
-        shutil.rmtree(build_dir / path, ignore_errors=True)
-    for path in build_dir.glob(DB + "*"):
-        path.unlink()
+    for path in [*build_dir.glob(DB + "*"), build_dir / OUTPUT]:
+        path.unlink(missing_ok=True)
     # doc-gen4 doesn't create the directory it puts its database in.
     build_dir.mkdir(parents=True, exist_ok=True)
 
@@ -100,12 +78,7 @@ def main() -> None:
         print(f"Documenting {module}", flush=True)
         run(*docgen("single", "--build", str(BUILD_DIR), module, DB, f"{src_url}/{file}"))
 
-    # No module roots: render every module in the database.
-    run(*docgen("fromDb", "--build", str(BUILD_DIR), str(BUILD_DIR / DB)))
-
-    doc = build_dir / "doc"
-    for page in [doc / f"{LIBRARY}.html", *(doc / LIBRARY).rglob("*.html")]:
-        page.write_text(fix_imports(page.read_text(encoding="utf-8")), encoding="utf-8")
+    run("lake", "exe", "export-docs", str(BUILD_DIR / DB), LIBRARY, str(BUILD_DIR / OUTPUT))
 
 
 if __name__ == "__main__":

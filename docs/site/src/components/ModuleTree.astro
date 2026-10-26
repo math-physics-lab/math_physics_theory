@@ -1,0 +1,56 @@
+---
+// The module hierarchy, for navigation. The current module also lists its declarations.
+import { declarations, modulePath, modules, relativeName, url } from '../lib/docs';
+
+interface Props {
+	/** The module whose submodules are listed, or `undefined` for the top level. */
+	parent?: string;
+	current?: string;
+}
+
+const { parent, current } = Astro.props;
+const depth = parent ? parent.split('.').length + 1 : 1;
+// Every prefix of a module name is a node, documented or not.
+const children = [
+	...new Set(
+		modules
+			.map((m) => m.name.split('.'))
+			.filter((parts) => parts.length >= depth && (!parent || parts.slice(0, depth - 1).join('.') === parent))
+			.map((parts) => parts.slice(0, depth).join('.')),
+	),
+].sort();
+---
+
+{
+	children.length > 0 && (
+		<ul class="module-tree">
+			{children.map((name) => {
+				const mod = modules.find((m) => m.name === name);
+				const isCurrent = name === current;
+				return (
+					<li>
+						{mod ? (
+							<a href={url(modulePath(name))} class:list={{ current: isCurrent }} aria-current={isCurrent ? 'page' : undefined}>
+								{relativeName(name, parent ?? '')}
+							</a>
+						) : (
+							<span>{relativeName(name, parent ?? '')}</span>
+						)}
+						{isCurrent && mod && declarations(mod).length > 0 && (
+							<ul class="decl-list">
+								{declarations(mod).map((d) => (
+									<li>
+										<a href={`#${encodeURIComponent(d.name)}`} title={d.name}>
+											{d.name.split('.').pop()}
+										</a>
+									</li>
+								))}
+							</ul>
+						)}
+						<Astro.self parent={name} current={current} />
+					</li>
+				);
+			})}
+		</ul>
+	)
+}

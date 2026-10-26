@@ -1,0 +1,12 @@
+---
+// Rendered Lean code, with constants linked to their docs.
+import { constUrl, type Code } from '../lib/docs';
+
+interface Props {
+	code: Code;
+}
+
+const { code } = Astro.props;
+// Kept on one line: signatures are `white-space: pre-wrap`, so whitespace in the markup would show.
+---
+{code.map((seg) => { const href = seg.c && constUrl(seg.c); return href ? <a href={href} title={seg.c}>{seg.s}</a> : seg.k ? <span class={seg.k}>{seg.s}</span> : seg.s; })}

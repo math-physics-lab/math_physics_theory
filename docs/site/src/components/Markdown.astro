@@ -1,0 +1,17 @@
+---
+// A docstring or notes file, rendered from Markdown with LaTeX math.
+import { renderMarkdown } from '../lib/markdown';
+
+interface Props {
+	markdown: string;
+	/** The declaration or namespace that names in inline code are resolved in. */
+	scope: string;
+	headingShift: number;
+	class?: string;
+}
+
+const { markdown, scope, headingShift, class: className } = Astro.props;
+const html = await renderMarkdown(markdown, scope, headingShift);
+---
+
+<div class:list={['prose', className]} set:html={html} />

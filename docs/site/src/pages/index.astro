@@ -1,0 +1,32 @@
+---
+// The library's front page: every documented module, with its title.
+import Base from '../layouts/Base.astro';
+import { declarations, library, moduleDocs, modulePath, modules, notes, url } from '../lib/docs';
+
+const entries = modules.map((mod) => ({
+	mod,
+	title: moduleDocs(mod)[0]?.doc.match(/^#\s+(.+)$/m)?.[1],
+	count: declarations(mod).length,
+	hasNotes: notes(mod.name) !== undefined,
+}));
+---
+
+<Base title={`${library} API docs`} description={`API documentation for the ${library} Lean library.`}>
+	<span class="page-kicker">API documentation</span>
+	<h1 class="page-title">{library}</h1>
+	<p>A Lean library of definitions and theorems from mathematical physics.</p>
+	<ul class="module-index">
+		{
+			entries.map(({ mod, title, count, hasNotes }) => (
+				<li>
+					<a href={url(modulePath(mod.name))}>{mod.name}</a>
+					<p>
+						{title ?? 'Library root'}
+						{count > 0 && <> · {count} declaration{count === 1 ? '' : 's'}</>}
+						{hasNotes && <> · notes</>}
+					</p>
+				</li>
+			))
+		}
+	</ul>
+</Base>

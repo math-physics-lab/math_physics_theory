@@ -1,0 +1,14 @@
+---
+// A signature: the name (the slot), then the binders and the type.
+import type { Arg, Code as CodeT } from '../lib/docs';
+import Code from './Code.astro';
+
+interface Props {
+	args: Arg[];
+	type: CodeT;
+}
+
+const { args, type } = Astro.props;
+// Kept on one line: signatures are `white-space: pre-wrap`, so whitespace in the markup would show.
+---
+<div class="signature"><slot />{args.map((arg) => <span class:list={['binder', { implicit: arg.implicit }]}> <Code code={arg.binder} /></span>)}<span class="colon"> : </span><Code code={type} /></div>
