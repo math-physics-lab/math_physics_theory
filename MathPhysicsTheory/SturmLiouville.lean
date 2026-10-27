@@ -21,21 +21,34 @@ The Sturm-Liouville operator with coefficients `p` and `q` acts on a function `y
 
 namespace MathPhysicsTheory.SturmLiouville
 
-/-- The Sturm-Liouville differential expression with coefficients `p` and `q`:
+/-- A Sturm-Liouville operator, given by its coefficients `p` and `q` in
 `L y = d/dx (p(x) y'(x)) + q(x) y(x)`. -/
-noncomputable def operator (p q : ℝ → ℝ) (y : ℝ → ℝ) : ℝ → ℝ :=
-  fun x => deriv (fun t => p (t) * deriv (y) (t)) (x) + q (x) * y (x)
+structure Operator where
+  /-- The coefficient inside the derivative. -/
+  p : ℝ → ℝ
+  /-- The potential. -/
+  q : ℝ → ℝ
+
+namespace Operator
+
+/-- The Sturm-Liouville differential expression `L y = d/dx (p(x) y'(x)) + q(x) y(x)`. -/
+noncomputable def apply (L : Operator) (y : ℝ → ℝ) : ℝ → ℝ :=
+  fun x => deriv (fun t => L.p (t) * deriv (y) (t)) (x) + L.q (x) * y (x)
 
 /-- Expanded form of the Sturm-Liouville operator: `L y = p y'' + p' y' + q y`. -/
-theorem operator_expanded {p q y : ℝ → ℝ} {x : ℝ} (hp : DifferentiableAt (ℝ) (p) (x))
-    (hy : DifferentiableAt (ℝ) (deriv (y)) (x)) :
-    operator (p) (q) (y) (x) =
-      p (x) * deriv (deriv (y)) (x) + deriv (p) (x) * deriv (y) (x) + q (x) * y (x) := by
-  have h : HasDerivAt (fun t => p (t) * deriv (y) (t))
-      (deriv (p) (x) * deriv (y) (x) + p (x) * deriv (deriv (y)) (x)) (x) :=
-    hp.hasDerivAt.mul (hy.hasDerivAt)
-  rw [operator, h.deriv]
+theorem apply_expanded (L : Operator) {y : ℝ → ℝ} (hp : Differentiable (ℝ) (L.p))
+    (hy : Differentiable (ℝ) (deriv (y))) :
+    L.apply (y) =
+      fun x => L.p (x) * deriv (deriv (y)) (x) + deriv (L.p) (x) * deriv (y) (x) +
+        L.q (x) * y (x) := by
+  funext x
+  have h : HasDerivAt (fun t => L.p (t) * deriv (y) (t))
+      (deriv (L.p) (x) * deriv (y) (x) + L.p (x) * deriv (deriv (y)) (x)) (x) :=
+    (hp (x)).hasDerivAt.mul ((hy (x)).hasDerivAt)
+  rw [apply, h.deriv]
   ring
+
+end Operator
 
 end MathPhysicsTheory.SturmLiouville
 
