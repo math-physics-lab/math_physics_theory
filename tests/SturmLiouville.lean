@@ -19,7 +19,7 @@ example (y : ℝ → ℝ) (hy : Differentiable (ℝ) (deriv (y))) :
   rw [({ p := 1, q := 0 : Operator }).apply_expanded (differentiable_const (1)) (hy)]
   simp
 
-/-- `y'' = -μ y` on `[0, π]` with Dirichlet conditions `y(0) = 0`, `y(π) = 0`. -/
+/-- `y'' = -λ y` on `[0, π]` with Dirichlet conditions `y(0) = 0`, `y(π) = 0`. -/
 noncomputable def dirichlet : Problem where
   a := 0
   b := Real.pi
@@ -42,5 +42,5 @@ example : dirichlet.IsSolution (1) (Real.sin) := by
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
   simp [dirichlet, Problem.IsSolution, Robin.Operator.condition, Robin.Operator.apply]
 
-/-- `isSolution_trivial` as a method: `y = 0` solves the Dirichlet problem for any `μ`. -/
-example (μ : ℝ) : dirichlet.IsSolution (μ) (0) := dirichlet.isSolution_trivial (μ)
+/-- `isSolution_trivial` as a method: `y = 0` solves the Dirichlet problem for any `λ`. -/
+example («λ» : ℝ) : dirichlet.IsSolution («λ») (0) := dirichlet.isSolution_trivial («λ»)

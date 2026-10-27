@@ -14,7 +14,7 @@ The Sturm-Liouville operator with coefficients `p` and `q` acts on a function `y
 
 A Sturm-Liouville problem on an interval `[a, b]` pairs such an operator with homogeneous Robin
 boundary conditions at the endpoints and a weight function `w`, with `p > 0` and `w > 0` on
-`[a, b]`. For a parameter `μ`, its solutions are the `y` with `L y = -μ w y` on `[a, b]`,
+`[a, b]`. For a parameter `λ`, its solutions are the `y` with `L y = -λ w y` on `[a, b]`,
 `α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
 
 ## References
@@ -84,15 +84,15 @@ structure Problem where
 
 namespace Problem
 
-/-- `y` solves the problem with parameter `μ`: `L y = -μ w y` on `[a, b]`, `Ba y = 0` and
+/-- `y` solves the problem with parameter `λ`: `L y = -λ w y` on `[a, b]`, `Ba y = 0` and
 `Bb y = 0`. -/
-def IsSolution (P : Problem) (μ : ℝ) (y : ℝ → ℝ) : Prop :=
-  (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -μ * P.w (x) * y (x)) ∧
+def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
+  (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -«λ» * P.w (x) * y (x)) ∧
     P.Ba.condition (0) (y) ∧ P.Bb.condition (0) (y)
 
-/-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `μ`. -/
-theorem isSolution_trivial (P : Problem) : ∀ μ : ℝ, P.IsSolution (μ) (0) := by
-  intro μ
+/-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `λ`. -/
+theorem isSolution_trivial (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
+  intro «λ»
   simp [IsSolution, Operator.apply, BoundaryConditions.Robin.Operator.condition,
     BoundaryConditions.Robin.Operator.apply]
 
