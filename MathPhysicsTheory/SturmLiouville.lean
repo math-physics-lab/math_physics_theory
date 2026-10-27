@@ -27,13 +27,14 @@ noncomputable def operator (p q : ℝ → ℝ) (y : ℝ → ℝ) : ℝ → ℝ :
   fun x => deriv (fun t => p (t) * deriv (y) (t)) (x) + q (x) * y (x)
 
 /-- Expanded form of the Sturm-Liouville operator: `L y = p y'' + p' y' + q y`. -/
-theorem operator_expanded {p q y : ℝ → ℝ} {x : ℝ} (hp : DifferentiableAt (ℝ) (p) (x))
-    (hy : DifferentiableAt (ℝ) (deriv (y)) (x)) :
-    operator (p) (q) (y) (x) =
-      p (x) * deriv (deriv (y)) (x) + deriv (p) (x) * deriv (y) (x) + q (x) * y (x) := by
+theorem operator_expanded {p q y : ℝ → ℝ} (hp : Differentiable (ℝ) (p))
+    (hy : Differentiable (ℝ) (deriv (y))) :
+    operator (p) (q) (y) =
+      fun x => p (x) * deriv (deriv (y)) (x) + deriv (p) (x) * deriv (y) (x) + q (x) * y (x) := by
+  funext x
   have h : HasDerivAt (fun t => p (t) * deriv (y) (t))
       (deriv (p) (x) * deriv (y) (x) + p (x) * deriv (deriv (y)) (x)) (x) :=
-    hp.hasDerivAt.mul (hy.hasDerivAt)
+    (hp (x)).hasDerivAt.mul ((hy (x)).hasDerivAt)
   rw [operator, h.deriv]
   ring
 
