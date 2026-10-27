@@ -22,49 +22,62 @@ by `B y = α y(c) + β y'(c)`. A Robin boundary condition prescribes the value o
 
 @[expose] public section
 
-namespace MathPhysicsTheory.BoundaryConditions
+namespace MathPhysicsTheory.BoundaryConditions.Robin
 
-/-- The Robin boundary operator at `c` with coefficients `α` and `β`:
+/-- A Robin boundary operator: the point `c` and the coefficients `α` and `β` of
 `B y = α y(c) + β y'(c)`. -/
-noncomputable def robin (α β c : ℝ) (y : ℝ → ℝ) : ℝ :=
-  α * y (c) + β * deriv (y) (c)
+structure Operator where
+  /-- The coefficient of `y(c)`. -/
+  α : ℝ
+  /-- The coefficient of `y'(c)`. -/
+  β : ℝ
+  /-- The point the condition is imposed at. -/
+  c : ℝ
+
+namespace Operator
+
+/-- The Robin boundary operator `B y = α y(c) + β y'(c)`. -/
+noncomputable def apply (B : Operator) (y : ℝ → ℝ) : ℝ :=
+  B.α * y (B.c) + B.β * deriv (y) (B.c)
 
 /-- The Robin operator is additive on functions differentiable at `c`. -/
-theorem robin_add {α β c : ℝ} {y z : ℝ → ℝ} (hy : DifferentiableAt (ℝ) (y) (c))
-    (hz : DifferentiableAt (ℝ) (z) (c)) :
-    robin (α) (β) (c) (fun x => y (x) + z (x)) = robin (α) (β) (c) (y) + robin (α) (β) (c) (z) := by
-  have h : deriv (fun x => y (x) + z (x)) (c) = deriv (y) (c) + deriv (z) (c) :=
+theorem apply_add (B : Operator) {y z : ℝ → ℝ} (hy : DifferentiableAt (ℝ) (y) (B.c))
+    (hz : DifferentiableAt (ℝ) (z) (B.c)) :
+    B.apply (fun x => y (x) + z (x)) = B.apply (y) + B.apply (z) := by
+  have h : deriv (fun x => y (x) + z (x)) (B.c) = deriv (y) (B.c) + deriv (z) (B.c) :=
     (hy.hasDerivAt.add (hz.hasDerivAt)).deriv
-  simp only [robin, h]
+  simp only [apply, h]
   ring
 
 /-- The Robin operator commutes with scalar multiplication. -/
-theorem robin_const_mul (α β c k : ℝ) (y : ℝ → ℝ) :
-    robin (α) (β) (c) (fun x => k * y (x)) = k * robin (α) (β) (c) (y) := by
-  simp only [robin, deriv_const_mul_field]
+theorem apply_const_mul (B : Operator) (k : ℝ) (y : ℝ → ℝ) :
+    B.apply (fun x => k * y (x)) = k * B.apply (y) := by
+  simp only [apply, deriv_const_mul_field]
   ring
 
-/-- The Robin boundary condition at `c` with right-hand side `γ`: `α y(c) + β y'(c) = γ`. -/
-def robinCondition (α β γ c : ℝ) (y : ℝ → ℝ) : Prop :=
-  robin (α) (β) (c) (y) = γ
+/-- The Robin boundary condition with right-hand side `γ`: `α y(c) + β y'(c) = γ`. -/
+def condition (B : Operator) (γ : ℝ) (y : ℝ → ℝ) : Prop :=
+  B.apply (y) = γ
 
 /-- If `y` and `z` satisfy Robin conditions with right-hand sides `γ₁` and `γ₂`, then `y + z`
 satisfies the one with right-hand side `γ₁ + γ₂`. -/
-theorem robinCondition_add {α β γ₁ γ₂ c : ℝ} {y z : ℝ → ℝ} (hy : DifferentiableAt (ℝ) (y) (c))
-    (hz : DifferentiableAt (ℝ) (z) (c)) (h₁ : robinCondition (α) (β) (γ₁) (c) (y))
-    (h₂ : robinCondition (α) (β) (γ₂) (c) (z)) :
-    robinCondition (α) (β) (γ₁ + γ₂) (c) (fun x => y (x) + z (x)) := by
-  unfold robinCondition at h₁ h₂ ⊢
-  rw [robin_add (hy) (hz), h₁, h₂]
+theorem condition_add (B : Operator) {γ₁ γ₂ : ℝ} {y z : ℝ → ℝ}
+    (hy : DifferentiableAt (ℝ) (y) (B.c)) (hz : DifferentiableAt (ℝ) (z) (B.c))
+    (h₁ : B.condition (γ₁) (y)) (h₂ : B.condition (γ₂) (z)) :
+    B.condition (γ₁ + γ₂) (fun x => y (x) + z (x)) := by
+  unfold condition at h₁ h₂ ⊢
+  rw [B.apply_add (hy) (hz), h₁, h₂]
 
 /-- If `y` satisfies the Robin condition with right-hand side `γ`, then `k y` satisfies the one
 with right-hand side `k γ`. -/
-theorem robinCondition_const_mul {α β γ c : ℝ} {y : ℝ → ℝ} (k : ℝ)
-    (h : robinCondition (α) (β) (γ) (c) (y)) :
-    robinCondition (α) (β) (k * γ) (c) (fun x => k * y (x)) := by
-  unfold robinCondition at h ⊢
-  rw [robin_const_mul, h]
+theorem condition_const_mul (B : Operator) {γ : ℝ} {y : ℝ → ℝ} (k : ℝ)
+    (h : B.condition (γ) (y)) :
+    B.condition (k * γ) (fun x => k * y (x)) := by
+  unfold condition at h ⊢
+  rw [apply_const_mul, h]
 
-end MathPhysicsTheory.BoundaryConditions
+end Operator
+
+end MathPhysicsTheory.BoundaryConditions.Robin
 
 end
