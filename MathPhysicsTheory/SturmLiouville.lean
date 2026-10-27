@@ -64,7 +64,7 @@ namespace Operator
 
 /-- The Sturm-Liouville differential expression `L y = d/dx (p(x) y'(x)) + q(x) y(x)`. -/
 noncomputable def apply (L : Operator) (y : ℝ → ℝ) : ℝ → ℝ :=
-  fun x => deriv (fun t => L.p (t) * deriv (y) (t)) (x) + L.q (x) * y (x)
+  fun x => deriv (fun x => L.p (x) * deriv (y) (x)) (x) + L.q (x) * y (x)
 
 /-- Expanded form of the Sturm-Liouville operator: `L y = p y'' + p' y' + q y`. -/
 theorem apply_expanded (L : Operator) {y : ℝ → ℝ} (hp : Differentiable (ℝ) (L.p))
