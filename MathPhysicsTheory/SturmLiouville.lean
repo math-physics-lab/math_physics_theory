@@ -7,15 +7,40 @@ public import MathPhysicsTheory.BoundaryConditions.Robin
 import MathPhysicsTheory.Linter.ArgParens
 
 /-!
-# Sturm-Liouville operators
+# Sturm-Liouville problems
 
-The Sturm-Liouville operator with coefficients `p` and `q` acts on a function `y` by
-`L y = (p y')' + q y`, i.e. `L = d/dx (p(x) d/dx) + q(x)`.
+A Sturm-Liouville problem on an interval `[a, b]`, with coefficients `p`, `q`, a weight `w` and
+`p > 0`, `w > 0` on `[a, b]`, asks for the functions `y` and numbers `λ` with
 
-A Sturm-Liouville problem on an interval `[a, b]` pairs such an operator with homogeneous Robin
-boundary conditions at the endpoints and a weight function `w`, with `p > 0` and `w > 0` on
-`[a, b]`. For a parameter `λ`, its solutions are the `y` with `L y = -λ w y` on `[a, b]`,
-`α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
+* `(p y')' + q y = -λ w y` on `[a, b]`,
+* `α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
+
+## Example
+
+`y'' = -λ y` on `[0, π]` with `y(0) = 0`, `y(π) = 0`: `sin` is a solution for `λ = 1`, `cos` is
+not.
+
+```lean
+noncomputable def dirichlet : Problem where
+  a := 0
+  b := Real.pi
+  a_lt_b := Real.pi_pos
+  L := { p := 1, q := 0 }
+  w := 1
+  p_pos := fun _ _ => by simp
+  w_pos := fun _ _ => by simp
+  Ba := { α := 1, β := 0, c := 0 }
+  Bb := { α := 1, β := 0, c := Real.pi }
+  Ba_c := rfl
+  Bb_c := rfl
+
+example : dirichlet.IsSolution (1) (Real.sin) := by
+  simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
+    Robin.Operator.apply]
+
+example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
+  simp [dirichlet, Problem.IsSolution, Robin.Operator.condition, Robin.Operator.apply]
+```
 
 ## References
 
