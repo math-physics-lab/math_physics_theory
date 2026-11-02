@@ -2,6 +2,7 @@ module
 
 public import Mathlib
 public import MathPhysicsTheory.BoundaryConditions.Robin
+public import MathPhysicsTheory.SturmLiouville.Operator
 
 -- Linter: requires function arguments to be written in parentheses, `f (x)`.
 import MathPhysicsTheory.Linter.ArgParens
@@ -14,6 +15,8 @@ A Sturm-Liouville problem on an interval `[a, b]`, with coefficients `p`, `q`, a
 
 * `(p y')' + q y = -λ w y` on `[a, b]`,
 * `α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
+
+`y = 0` is always a solution.
 
 ## Example
 
@@ -51,35 +54,6 @@ example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
 @[expose] public section
 
 namespace MathPhysicsTheory.SturmLiouville
-
-/-- A Sturm-Liouville operator, given by its coefficients `p` and `q` in
-`L y = d/dx (p(x) y'(x)) + q(x) y(x)`. -/
-structure Operator where
-  /-- The coefficient inside the derivative. -/
-  p : ℝ → ℝ
-  /-- The potential. -/
-  q : ℝ → ℝ
-
-namespace Operator
-
-/-- The Sturm-Liouville differential expression `L y = d/dx (p(x) y'(x)) + q(x) y(x)`. -/
-noncomputable def apply (L : Operator) (y : ℝ → ℝ) : ℝ → ℝ :=
-  fun x => deriv (fun x => L.p (x) * deriv (y) (x)) (x) + L.q (x) * y (x)
-
-/-- Expanded form of the Sturm-Liouville operator: `L y = p y'' + p' y' + q y`. -/
-theorem apply_expanded (L : Operator) {y : ℝ → ℝ} (hp : Differentiable (ℝ) (L.p))
-    (hy : Differentiable (ℝ) (deriv (y))) :
-    L.apply (y) =
-      fun x => L.p (x) * deriv (deriv (y)) (x) + deriv (L.p) (x) * deriv (y) (x) +
-        L.q (x) * y (x) := by
-  funext x
-  have h : HasDerivAt (fun t => L.p (t) * deriv (y) (t))
-      (deriv (L.p) (x) * deriv (y) (x) + L.p (x) * deriv (deriv (y)) (x)) (x) :=
-    (hp (x)).hasDerivAt.mul ((hy (x)).hasDerivAt)
-  rw [apply, h.deriv]
-  ring
-
-end Operator
 
 /-- A Sturm-Liouville problem: an interval `[a, b]`, an operator `L`, a weight `w` and Robin
 boundary operators `Ba` at `a` and `Bb` at `b`, with `p > 0` and `w > 0` on `[a, b]`. -/
