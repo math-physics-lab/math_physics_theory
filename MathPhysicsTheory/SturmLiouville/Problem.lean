@@ -10,11 +10,17 @@ import MathPhysicsTheory.Linter.ArgParens
 /-!
 # Sturm-Liouville problems
 
-A Sturm-Liouville problem on an interval `[a, b]`, with coefficients `p`, `q`, a weight `w` and
-`p > 0`, `w > 0` on `[a, b]`, asks for the functions `y` and numbers `λ` with
+A Sturm-Liouville problem on an interval `[a, b]`, with coefficients `p`, `q` and a weight `w`,
+asks for the functions `y` and numbers `λ` with
 
 * `(p y')' + q y = -λ w y` on `[a, b]`,
 * `α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
+
+The coefficients satisfy, on `[a, b]`:
+
+* `p` is continuously differentiable, `q` and `w` are continuous;
+* `p > 0`, `w > 0` and `q ≤ 0`;
+* `α₁² + β₁² ≠ 0`, `α₂² + β₂² ≠ 0`, `α₁ β₁ ≤ 0` and `α₂ β₂ ≥ 0`.
 
 `y = 0` is always a solution.
 
@@ -30,12 +36,21 @@ noncomputable def dirichlet : Problem where
   a_lt_b := Real.pi_pos
   L := { p := 1, q := 0 }
   w := 1
-  p_pos := fun _ _ => by simp
-  w_pos := fun _ _ => by simp
   Ba := { α := 1, β := 0, c := 0 }
   Bb := { α := 1, β := 0, c := Real.pi }
-  Ba_c := rfl
-  Bb_c := rfl
+  assumptions := {
+    p_pos := fun _ _ => by simp
+    w_pos := fun _ _ => by simp
+    p_contDiffOn := contDiffOn_const
+    q_continuousOn := continuousOn_const
+    w_continuousOn := continuousOn_const
+    q_nonpos := fun _ _ => by simp
+    Ba_c := rfl
+    Bb_c := rfl
+    Ba_ne := by simp
+    Bb_ne := by simp
+    Ba_mul_nonpos := by simp
+    Bb_mul_nonneg := by simp }
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
   simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
@@ -55,8 +70,37 @@ example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
 
 namespace MathPhysicsTheory.SturmLiouville
 
+/-- The assumptions on the data of a Sturm-Liouville problem on `[a, b]` with operator `L`, weight
+`w` and Robin boundary operators `Ba`, `Bb`. -/
+structure Assumptions (a b : ℝ) (L : Operator) (w : ℝ → ℝ)
+    (Ba Bb : BoundaryConditions.Robin.Operator) : Prop where
+  /-- `p` is positive on `[a, b]`. -/
+  p_pos : ∀ x ∈ Set.Icc (a) (b), 0 < L.p (x)
+  /-- `w` is positive on `[a, b]`. -/
+  w_pos : ∀ x ∈ Set.Icc (a) (b), 0 < w (x)
+  /-- `p` is continuously differentiable on `[a, b]`. -/
+  p_contDiffOn : ContDiffOn (ℝ) (1) (L.p) (Set.Icc (a) (b))
+  /-- `q` is continuous on `[a, b]`. -/
+  q_continuousOn : ContinuousOn (L.q) (Set.Icc (a) (b))
+  /-- `w` is continuous on `[a, b]`. -/
+  w_continuousOn : ContinuousOn (w) (Set.Icc (a) (b))
+  /-- `q ≤ 0` on `[a, b]`. -/
+  q_nonpos : ∀ x ∈ Set.Icc (a) (b), L.q (x) ≤ 0
+  /-- `Ba` is imposed at `a`. -/
+  Ba_c : Ba.c = a
+  /-- `Bb` is imposed at `b`. -/
+  Bb_c : Bb.c = b
+  /-- `Ba` is nondegenerate: `α` and `β` are not both zero. -/
+  Ba_ne : Ba.α ≠ 0 ∨ Ba.β ≠ 0
+  /-- `Bb` is nondegenerate: `α` and `β` are not both zero. -/
+  Bb_ne : Bb.α ≠ 0 ∨ Bb.β ≠ 0
+  /-- `α₁ β₁ ≤ 0` at `a`. -/
+  Ba_mul_nonpos : Ba.α * Ba.β ≤ 0
+  /-- `α₂ β₂ ≥ 0` at `b`. -/
+  Bb_mul_nonneg : 0 ≤ Bb.α * Bb.β
+
 /-- A Sturm-Liouville problem: an interval `[a, b]`, an operator `L`, a weight `w` and Robin
-boundary operators `Ba` at `a` and `Bb` at `b`, with `p > 0` and `w > 0` on `[a, b]`. -/
+boundary operators `Ba` at `a` and `Bb` at `b`, satisfying the `Assumptions`. -/
 structure Problem where
   /-- The left endpoint of the interval. -/
   a : ℝ
@@ -68,18 +112,12 @@ structure Problem where
   L : Operator
   /-- The weight (density) function. -/
   w : ℝ → ℝ
-  /-- `p` is positive on `[a, b]`. -/
-  p_pos : ∀ x ∈ Set.Icc (a) (b), 0 < L.p (x)
-  /-- `w` is positive on `[a, b]`. -/
-  w_pos : ∀ x ∈ Set.Icc (a) (b), 0 < w (x)
   /-- The Robin boundary operator at `a`. -/
   Ba : BoundaryConditions.Robin.Operator
   /-- The Robin boundary operator at `b`. -/
   Bb : BoundaryConditions.Robin.Operator
-  /-- `Ba` is imposed at `a`. -/
-  Ba_c : Ba.c = a
-  /-- `Bb` is imposed at `b`. -/
-  Bb_c : Bb.c = b
+  /-- The assumptions on the coefficients and boundary operators. -/
+  assumptions : Assumptions (a) (b) (L) (w) (Ba) (Bb)
 
 namespace Problem
 
