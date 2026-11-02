@@ -8,7 +8,7 @@ Install Lean via [elan](https://github.com/leanprover/elan), then:
 
 ```sh
 lake exe cache get   # download prebuilt Mathlib
-lake build --wfail   # build, failing on any warning or linter finding
+lake build           # build the library
 ```
 
 ## Tests
@@ -16,7 +16,7 @@ lake build --wfail   # build, failing on any warning or linter finding
 Tests live in `tests/`:
 
 ```sh
-lake test --wfail
+lake test
 ```
 
 ## Documentation

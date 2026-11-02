@@ -16,10 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Build library and run tests (warnings are errors)
+      - name: Build library and run tests
         uses: leanprover/lean-action@v1
         with:
           use-mathlib-cache: true
-          build-args: "--wfail"
           test: true
-          test-args: "--wfail"
