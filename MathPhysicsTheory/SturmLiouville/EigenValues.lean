@@ -9,11 +9,13 @@ import MathPhysicsTheory.Linter.ArgParens
 /-!
 # Eigenvalues of Sturm-Liouville problems
 
-A number `λ` is an eigenvalue of a Sturm-Liouville problem if the problem has a solution `y` that
-is not identically zero on `[a, b]`, and such a `y` is an eigenfunction for `λ`.
+A number `λ` is an eigenvalue of a Sturm-Liouville problem if the problem has a solution `X` that
+is not identically zero on `[a, b]`, and such an `X` is an eigenfunction for `λ`.
 
 The eigenvalues form a countable set of real numbers
-`0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigenvalue_sequence`).
+`0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigen_value_sequence`).
+Eigenfunctions for different eigenvalues are orthogonal on `[a, b]` with weight `w`
+(`eigen_functions_orthogonal`).
 
 ## Example
 
@@ -22,7 +24,7 @@ For the Dirichlet problem `y'' = -λ y` on `[0, π]` with `y(0) = 0`, `y(π) = 0
 problem and is nonzero at `π / 2`.
 
 ```lean
-example : EigenValues.IsEigenvalue (dirichlet) (1) :=
+example : EigenValues.eigen_value (dirichlet) (1) :=
   ⟨Real.sin, ⟨by simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
     Robin.Operator.apply], Real.pi / 2, ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩⟩
 ```
@@ -37,47 +39,57 @@ example : EigenValues.IsEigenvalue (dirichlet) (1) :=
 
 namespace MathPhysicsTheory.SturmLiouville.EigenValues
 
-/-- `y` is an eigenfunction of `P` for `λ`: a solution with parameter `λ` that is not identically
+/-- `X` is an eigenfunction of `P` for `λ`: a solution with parameter `λ` that is not identically
 zero on `[a, b]`. -/
-def IsEigenfunction (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
-  P.IsSolution («λ») (y) ∧ ∃ x ∈ Set.Icc (P.a) (P.b), y (x) ≠ 0
+def eigen_function (P : Problem) («λ» : ℝ) (X : ℝ → ℝ) : Prop :=
+  P.IsSolution («λ») (X) ∧ ∃ x ∈ Set.Icc (P.a) (P.b), X (x) ≠ 0
 
 /-- `λ` is an eigenvalue of `P`: the problem has an eigenfunction for `λ`. -/
-def IsEigenvalue (P : Problem) («λ» : ℝ) : Prop :=
-  ∃ y, IsEigenfunction (P) («λ») (y)
+def eigen_value (P : Problem) («λ» : ℝ) : Prop :=
+  ∃ X, eigen_function (P) («λ») (X)
 
 /-- The set of eigenvalues of `P`. -/
-def EigenvaluesSet (P : Problem) : Set (ℝ) :=
-  {«λ» | IsEigenvalue (P) («λ»)}
+def eigen_values_set (P : Problem) : Set (ℝ) :=
+  {«λ» | eigen_value (P) («λ»)}
 
 /-- An eigenfunction for `λ` makes `λ` an eigenvalue. -/
-theorem IsEigenfunction.isEigenvalue {P : Problem} {«λ» : ℝ} {y : ℝ → ℝ}
-    (h : IsEigenfunction (P) («λ») (y)) : IsEigenvalue (P) («λ») :=
-  ⟨y, h⟩
+theorem eigen_value_of_eigen_function {P : Problem} {«λ» : ℝ} {X : ℝ → ℝ}
+    (h : eigen_function (P) («λ») (X)) : eigen_value (P) («λ») :=
+  ⟨X, h⟩
 
 /-- The eigenvalues of `P` form a sequence `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`. -/
-theorem eigenvalue_sequence (P : Problem) :
+theorem eigen_values_sequence (P : Problem) :
     ∃ «λ» : ℕ → ℝ, StrictMono («λ») ∧ 0 ≤ «λ» (0) ∧
       Filter.Tendsto («λ») (Filter.atTop) (Filter.atTop) ∧
-      Set.range («λ») = EigenvaluesSet (P) := by
+      Set.range («λ») = eigen_values_set (P) := by
   -- TODO: prove.
   sorry
 
 /-- The set of eigenvalues is countable. -/
-theorem eigenvalues_countable (P : Problem) : (EigenvaluesSet (P)).Countable := by
-  obtain ⟨«λ», -, -, -, hrange⟩ := eigenvalue_sequence (P)
+theorem eigen_values_countable (P : Problem) : (eigen_values_set (P)).Countable := by
+  obtain ⟨«λ», -, -, -, hrange⟩ := eigen_values_sequence (P)
   exact hrange ▸ Set.countable_range («λ»)
 
 /-- The set of eigenvalues is infinite. -/
-theorem eigenvalues_infinite (P : Problem) : (EigenvaluesSet (P)).Infinite := by
-  obtain ⟨«λ», hmono, -, -, hrange⟩ := eigenvalue_sequence (P)
+theorem eigen_values_infinite (P : Problem) : (eigen_values_set (P)).Infinite := by
+  obtain ⟨«λ», hmono, -, -, hrange⟩ := eigen_values_sequence (P)
   exact hrange ▸ Set.infinite_range_of_injective (hmono.injective)
 
 /-- Every eigenvalue is nonnegative. -/
-theorem eigenvalues_nonneg {P : Problem} {μ : ℝ} (hμ : μ ∈ EigenvaluesSet (P)) : 0 ≤ μ := by
-  obtain ⟨«λ», hmono, h0, -, hrange⟩ := eigenvalue_sequence (P)
-  obtain ⟨n, rfl⟩ := hrange ▸ hμ
+theorem eigen_values_nonneg {P : Problem} {«λₙ» : ℝ} (hₙ : «λₙ» ∈ eigen_values_set (P)) :
+    0 ≤ «λₙ» := by
+  obtain ⟨«λ», hmono, h0, -, hrange⟩ := eigen_values_sequence (P)
+  obtain ⟨n, rfl⟩ := hrange ▸ hₙ
   exact h0.trans (hmono.monotone (Nat.zero_le (n)))
+
+/-- Eigenfunctions `Xₙ`, `Xₘ` for different eigenvalues `λₙ ≠ λₘ` are orthogonal on `[a, b]`
+with weight `w`: `∫ₐᵇ Xₙ(x) Xₘ(x) w(x) dx = 0`. -/
+theorem eigen_functions_orthogonal (P : Problem) {«λₙ» «λₘ» : ℝ} {Xₙ Xₘ : ℝ → ℝ}
+    (hₙ : eigen_function (P) («λₙ») (Xₙ)) (hₘ : eigen_function (P) («λₘ») (Xₘ))
+    (hne : «λₙ» ≠ «λₘ») :
+    ∫ x in (P.a)..(P.b), Xₙ (x) * Xₘ (x) * P.w (x) = 0 := by
+  -- TODO: prove.
+  sorry
 
 end MathPhysicsTheory.SturmLiouville.EigenValues
 
