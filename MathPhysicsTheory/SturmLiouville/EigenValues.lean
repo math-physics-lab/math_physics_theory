@@ -13,7 +13,7 @@ A number `λ` is an eigenvalue of a Sturm-Liouville problem if the problem has a
 is not identically zero on `[a, b]`, and such an `X` is an eigenfunction for `λ`.
 
 The eigenvalues form a countable set of real numbers
-`0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigen_value_sequence`).
+`0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigen_values_sequence`).
 Eigenfunctions for different eigenvalues are orthogonal on `[a, b]` with weight `w`
 (`eigen_functions_orthogonal`).
 
