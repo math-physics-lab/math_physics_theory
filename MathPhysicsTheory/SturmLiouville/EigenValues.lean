@@ -85,6 +85,14 @@ theorem eigen_values_nonneg {P : Problem} {«λₙ» : ℝ} (hₙ : «λₙ» �
   obtain ⟨n, rfl⟩ := hrange ▸ hₙ
   exact h0.trans (hmono.monotone (Nat.zero_le (n)))
 
+/-- Each eigenvalue `λₙ` corresponds to a single eigenfunction, up to a constant factor: two
+eigenfunctions `Xₙ`, `Yₙ` for `λₙ` are proportional on `[a, b]`. -/
+theorem eigen_functions_correspondence (P : Problem) {«λₙ» : ℝ} {Xₙ Yₙ : ℝ → ℝ}
+    (hX : eigen_function (P) («λₙ») (Xₙ)) (hY : eigen_function (P) («λₙ») (Yₙ)) :
+    ∃ c : ℝ, ∀ x ∈ Set.Icc (P.a) (P.b), Yₙ (x) = c * Xₙ (x) := by
+  -- TODO: prove.
+  sorry
+
 /-- Eigenfunctions `Xₙ`, `Xₘ` for different eigenvalues `λₙ ≠ λₘ` are orthogonal on `[a, b]`
 with weight `w`: `∫ₐᵇ Xₙ(x) Xₘ(x) w(x) dx = 0`. -/
 theorem eigen_functions_orthogonal (P : Problem) {«λₙ» «λₘ» : ℝ} {Xₙ Xₘ : ℝ → ℝ}
@@ -94,13 +102,6 @@ theorem eigen_functions_orthogonal (P : Problem) {«λₙ» «λₘ» : ℝ} {X�
   -- TODO: prove.
   sorry
 
-/-- Each eigenvalue `λₙ` corresponds to a single eigenfunction, up to a constant factor: two
-eigenfunctions `Xₙ`, `Yₙ` for `λₙ` are proportional on `[a, b]`. -/
-theorem eigen_functions_correspondence (P : Problem) {«λₙ» : ℝ} {Xₙ Yₙ : ℝ → ℝ}
-    (hX : eigen_function (P) («λₙ») (Xₙ)) (hY : eigen_function (P) («λₙ») (Yₙ)) :
-    ∃ c : ℝ, ∀ x ∈ Set.Icc (P.a) (P.b), Yₙ (x) = c * Xₙ (x) := by
-  -- TODO: prove.
-  sorry
 
 end MathPhysicsTheory.SturmLiouville.EigenValues
 
