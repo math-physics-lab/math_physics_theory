@@ -12,10 +12,12 @@ import MathPhysicsTheory.Linter.ArgParens
 A number `λ` is an eigenvalue of a Sturm-Liouville problem if the problem has a solution `X` that
 is not identically zero on `[a, b]`, and such an `X` is an eigenfunction for `λ`.
 
-The eigenvalues form a countable set of real numbers
-`0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigen_values_sequence`).
-Eigenfunctions for different eigenvalues are orthogonal on `[a, b]` with weight `w`
-(`eigen_functions_orthogonal`).
+- the eigenvalues form a countable set of real numbers
+  `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`eigen_values_sequence`).
+- eigenfunctions for different eigenvalues are orthogonal on `[a, b]` with weight `w`
+  (`eigen_functions_orthogonal`).
+- each eigenvalue corresponds to a single eigenfunction, up to a constant factor
+  (`eigen_functions_correspondence`).
 
 ## Example
 
@@ -89,6 +91,14 @@ theorem eigen_functions_orthogonal (P : Problem) {«λₙ» «λₘ» : ℝ} {X�
     (hₙ : eigen_function (P) («λₙ») (Xₙ)) (hₘ : eigen_function (P) («λₘ») (Xₘ))
     (hne : «λₙ» ≠ «λₘ») :
     ∫ x in (P.a)..(P.b), Xₙ (x) * Xₘ (x) * P.w (x) = 0 := by
+  -- TODO: prove.
+  sorry
+
+/-- Each eigenvalue `λₙ` corresponds to a single eigenfunction, up to a constant factor: two
+eigenfunctions `Xₙ`, `Yₙ` for `λₙ` are proportional on `[a, b]`. -/
+theorem eigen_functions_correspondence (P : Problem) {«λₙ» : ℝ} {Xₙ Yₙ : ℝ → ℝ}
+    (hX : eigen_function (P) («λₙ») (Xₙ)) (hY : eigen_function (P) («λₙ») (Yₙ)) :
+    ∃ c : ℝ, ∀ x ∈ Set.Icc (P.a) (P.b), Yₙ (x) = c * Xₙ (x) := by
   -- TODO: prove.
   sorry
 
