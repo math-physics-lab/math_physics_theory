@@ -56,25 +56,26 @@ theorem apply_const_mul (B : Operator) (k : ℝ) (y : ℝ → ℝ) :
   simp only [apply, deriv_const_mul_field]
   ring
 
-/-- The Robin boundary condition with right-hand side `g`: `α y(c) + β y'(c) = g(c)`. -/
-def condition (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) : Prop :=
+/-- `y` satisfies the Robin boundary condition with right-hand side `g`:
+`α y(c) + β y'(c) = g(c)`. -/
+def Satisfies (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) : Prop :=
   B.apply (y) = g (B.c)
 
 /-- If `y` and `z` satisfy Robin conditions with right-hand sides `g₁` and `g₂`, then `y + z`
 satisfies the one with right-hand side `g₁ + g₂`. -/
-theorem condition_add (B : Operator) {g₁ g₂ : ℝ → ℝ} {y z : ℝ → ℝ}
+theorem satisfies_add (B : Operator) {g₁ g₂ : ℝ → ℝ} {y z : ℝ → ℝ}
     (hy : DifferentiableAt (ℝ) (y) (B.c)) (hz : DifferentiableAt (ℝ) (z) (B.c))
-    (h₁ : B.condition (g₁) (y)) (h₂ : B.condition (g₂) (z)) :
-    B.condition (fun x => g₁ (x) + g₂ (x)) (fun x => y (x) + z (x)) := by
-  unfold condition at h₁ h₂ ⊢
+    (h₁ : B.Satisfies (g₁) (y)) (h₂ : B.Satisfies (g₂) (z)) :
+    B.Satisfies (fun x => g₁ (x) + g₂ (x)) (fun x => y (x) + z (x)) := by
+  unfold Satisfies at h₁ h₂ ⊢
   rw [B.apply_add (hy) (hz), h₁, h₂]
 
 /-- If `y` satisfies the Robin condition with right-hand side `g`, then `k y` satisfies the one
 with right-hand side `k g`. -/
-theorem condition_const_mul (B : Operator) {g : ℝ → ℝ} {y : ℝ → ℝ} (k : ℝ)
-    (h : B.condition (g) (y)) :
-    B.condition (fun x => k * g (x)) (fun x => k * y (x)) := by
-  unfold condition at h ⊢
+theorem satisfies_const_mul (B : Operator) {g : ℝ → ℝ} {y : ℝ → ℝ} (k : ℝ)
+    (h : B.Satisfies (g) (y)) :
+    B.Satisfies (fun x => k * g (x)) (fun x => k * y (x)) := by
+  unfold Satisfies at h ⊢
   rw [apply_const_mul, h]
 
 end Operator
