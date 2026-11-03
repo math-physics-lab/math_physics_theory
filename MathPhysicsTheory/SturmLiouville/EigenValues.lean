@@ -18,6 +18,8 @@ is not identically zero on `[a, b]`, and such an `X` is an eigenfunction for `λ
   (`eigen_functions_orthogonal`).
 - each eigenvalue corresponds to a single eigenfunction, up to a constant factor
   (`eigen_functions_correspondence`).
+- an eigenfunction for the `n`-th eigenvalue `λₙ` has exactly `n` zeros in `(a, b)`
+  (`eigen_functions_oscillation`).
 
 ## Example
 
@@ -90,6 +92,15 @@ eigenfunctions `Xₙ`, `Yₙ` for `λₙ` are proportional on `[a, b]`. -/
 theorem eigen_functions_correspondence (P : Problem) {«λₙ» : ℝ} {Xₙ Yₙ : ℝ → ℝ}
     (hX : eigen_function (P) («λₙ») (Xₙ)) (hY : eigen_function (P) («λₙ») (Yₙ)) :
     ∃ c : ℝ, ∀ x ∈ Set.Icc (P.a) (P.b), Yₙ (x) = c * Xₙ (x) := by
+  -- TODO: prove.
+  sorry
+
+/-- Oscillation theorem: if `λ₀ < λ₁ < ⋯` are the eigenvalues of `P` in increasing order, then an
+eigenfunction `Xₙ` for `λₙ` has exactly `n` zeros in `(a, b)`. -/
+theorem eigen_functions_oscillation (P : Problem) {«λ» : ℕ → ℝ} (hmono : StrictMono («λ»))
+    (hrange : Set.range («λ») = eigen_values_set (P)) {n : ℕ} {Xₙ : ℝ → ℝ}
+    (hₙ : eigen_function (P) («λ» (n)) (Xₙ)) :
+    {x | x ∈ Set.Ioo (P.a) (P.b) ∧ Xₙ (x) = 0}.encard = n := by
   -- TODO: prove.
   sorry
 
