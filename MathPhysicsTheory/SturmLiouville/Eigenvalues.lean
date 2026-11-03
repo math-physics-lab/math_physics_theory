@@ -70,7 +70,7 @@ theorem isEigenvalue_of_isEigenfunction {P : Problem} {«λₙ» : ℝ} {Xₙ : 
 
 /-- An infinite set `S` in a linear order with only finitely many elements below every bound is
 the range of a strictly increasing sequence tending to `+∞`. -/
-theorem exists_strictMono_tendsto_range_eq {α : Type*} [LinearOrder α] {S : Set α}
+theorem exists_strictMono_tendsto_range_eq {α : Type*} [LinearOrder (α)] {S : Set (α)}
     (hS : S.Infinite) (hfin : ∀ c, (S ∩ Set.Iic (c)).Finite) :
     ∃ f : ℕ → α, StrictMono (f) ∧ Filter.Tendsto (f) (Filter.atTop) (Filter.atTop) ∧
       Set.range (f) = S := by
@@ -81,11 +81,11 @@ theorem exists_strictMono_tendsto_range_eq {α : Type*} [LinearOrder α] {S : Se
     refine Set.ncard_lt_ncard (?_) ((hfin (t)).subset
       (Set.inter_subset_inter_right (S) (Set.Iio_subset_Iic_self)))
     refine ⟨Set.inter_subset_inter_right (S) (Set.Iio_subset_Iio (hst.le)), fun h => ?_⟩
-    exact lt_irrefl (_) (h ⟨s.2, hst⟩).2
-  haveI : Infinite S := hS.to_subtype
-  haveI : Infinite (Set.range (g)) := (Set.infinite_range_of_injective (hg.injective)).to_subtype
+    exact lt_irrefl (_) ((h ⟨s.2, hst⟩).2)
+  have : Infinite (S) := hS.to_subtype
+  have : Infinite (Set.range (g)) := (Set.infinite_range_of_injective (hg.injective)).to_subtype
   let e : ℕ ≃o S := (Nat.Subtype.orderIsoOfNat (Set.range (g))).trans
-    (StrictMono.orderIso (g) (hg)).symm
+    ((StrictMono.orderIso (g) (hg)).symm)
   let f : ℕ → α := fun n => (e (n) : α)
   have hf : StrictMono (f) := fun m n h => e.strictMono (h)
   refine ⟨f, hf, ?_, ?_⟩
