@@ -29,7 +29,8 @@ noncomputable def dirichlet : Problem where
 
 /-- `sin` solves `y'' = -y`, `y(0) = 0`, `y(π) = 0`. -/
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
+  refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
+  simp [dirichlet, Operator.apply, Robin.Operator.condition,
     Robin.Operator.apply]
 
 /-- `cos` solves `y'' = -y` but not `y(0) = 0`. -/

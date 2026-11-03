@@ -53,7 +53,8 @@ noncomputable def dirichlet : Problem where
     Bb_mul_nonneg := by simp }
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
+  refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
+  simp [dirichlet, Operator.apply, Robin.Operator.condition,
     Robin.Operator.apply]
 
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
@@ -121,16 +122,18 @@ structure Problem where
 
 namespace Problem
 
-/-- `y` solves the problem with parameter `λ`: `L y = -λ w y` on `[a, b]`, `Ba y = 0` and
-`Bb y = 0`. -/
+/-- `y` solves the problem with parameter `λ`: `y` is twice continuously differentiable on
+`[a, b]`, `L y = -λ w y` on `[a, b]`, `Ba y = 0` and `Bb y = 0`. -/
 def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
+  ContDiffOn (ℝ) (2) (y) (Set.Icc (P.a) (P.b)) ∧
   (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -«λ» * P.w (x) * y (x)) ∧
     P.Ba.condition (0) (y) ∧ P.Bb.condition (0) (y)
 
 /-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `λ`. -/
 theorem isSolution_trivial (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
   intro «λ»
-  simp [IsSolution, Operator.apply, BoundaryConditions.Robin.Operator.condition,
+  refine ⟨contDiffOn_const, ?_⟩
+  simp [Operator.apply, BoundaryConditions.Robin.Operator.condition,
     BoundaryConditions.Robin.Operator.apply]
 
 end Problem

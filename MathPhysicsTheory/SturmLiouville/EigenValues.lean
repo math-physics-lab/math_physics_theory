@@ -25,8 +25,9 @@ problem and is nonzero at `π / 2`.
 
 ```lean
 example : EigenValues.eigen_value (dirichlet) (1) :=
-  ⟨Real.sin, ⟨by simp [dirichlet, Problem.IsSolution, Operator.apply, Robin.Operator.condition,
-    Robin.Operator.apply], Real.pi / 2, ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩⟩
+  ⟨Real.sin, ⟨⟨Real.contDiff_sin.contDiffOn, by simp [dirichlet, Operator.apply,
+    Robin.Operator.condition, Robin.Operator.apply]⟩, Real.pi / 2,
+    ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩⟩
 ```
 
 ## References
