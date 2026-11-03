@@ -21,9 +21,9 @@ example : ({ α := 0, β := 1, c := Real.pi : Operator }).apply (Real.cos) = 0 :
   simp [Operator.apply]
 
 /-- `exp` satisfies `2 y(0) + 3 y'(0) = 5`. -/
-example : ({ α := 2, β := 3, c := 0 : Operator }).condition (fun _ => 5) (Real.exp) := by
-  norm_num [Operator.condition, Operator.apply]
+example : ({ α := 2, β := 3, c := 0 : Operator }).Satisfies (fun _ => 5) (Real.exp) := by
+  norm_num [Operator.Satisfies, Operator.apply]
 
 /-- `sin` satisfies the homogeneous Dirichlet condition `y(π) = 0`. -/
-example : ({ α := 1, β := 0, c := Real.pi : Operator }).condition (0) (Real.sin) := by
-  simp [Operator.condition, Operator.apply]
+example : ({ α := 1, β := 0, c := Real.pi : Operator }).Satisfies (0) (Real.sin) := by
+  simp [Operator.Satisfies, Operator.apply]

@@ -54,11 +54,11 @@ noncomputable def dirichlet : Problem where
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
   refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
-  simp [dirichlet, Operator.apply, Robin.Operator.condition,
+  simp [dirichlet, Operator.apply, Robin.Operator.Satisfies,
     Robin.Operator.apply]
 
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
-  simp [dirichlet, Problem.IsSolution, Robin.Operator.condition, Robin.Operator.apply]
+  simp [dirichlet, Problem.IsSolution, Robin.Operator.Satisfies, Robin.Operator.apply]
 ```
 
 ## References
@@ -127,13 +127,13 @@ namespace Problem
 def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
   ContDiffOn (ℝ) (2) (y) (Set.Icc (P.a) (P.b)) ∧
   (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -«λ» * P.w (x) * y (x)) ∧
-    P.Ba.condition (0) (y) ∧ P.Bb.condition (0) (y)
+    P.Ba.Satisfies (0) (y) ∧ P.Bb.Satisfies (0) (y)
 
 /-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `λ`. -/
-theorem isSolution_trivial (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
+theorem isSolution_zero (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
   intro «λ»
   refine ⟨contDiffOn_const, ?_⟩
-  simp [Operator.apply, BoundaryConditions.Robin.Operator.condition,
+  simp [Operator.apply, BoundaryConditions.Robin.Operator.Satisfies,
     BoundaryConditions.Robin.Operator.apply]
 
 end Problem
