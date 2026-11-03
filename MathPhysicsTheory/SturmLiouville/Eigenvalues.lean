@@ -13,10 +13,7 @@ A number `λ` is an eigenvalue of a Sturm-Liouville problem if the problem has a
 is not identically zero on `[a, b]`, and such an `X` is an eigenfunction for `λ`.
 
 - the eigenvalues form a countable set of real numbers
-  `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`exists_eigenvalue_seq`). This follows from three facts:
-  every eigenvalue is nonnegative (`nonneg_of_mem_eigenvalueSet`), there are infinitely many
-  (`eigenvalueSet_infinite`), and only finitely many lie below any bound
-  (`eigenvalueSet_inter_Iic_finite`).
+  `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞` (`exists_eigenvalue_seq`).
 - eigenfunctions for different eigenvalues are orthogonal on `[a, b]` with weight `w`
   (`isEigenfunction_orthogonal`).
 - each eigenvalue corresponds to a single eigenfunction, up to a constant factor
@@ -68,50 +65,19 @@ theorem isEigenvalue_of_isEigenfunction {P : Problem} {«λₙ» : ℝ} {Xₙ : 
     (h : IsEigenfunction (P) («λₙ») (Xₙ)) : IsEigenvalue (P) («λₙ») :=
   ⟨Xₙ, h⟩
 
-/-- An infinite set `S` in a linear order with only finitely many elements below every bound is
-the range of a strictly increasing sequence tending to `+∞`. -/
-theorem exists_strictMono_tendsto_range_eq {α : Type*} [LinearOrder (α)] {S : Set (α)}
-    (hS : S.Infinite) (hfin : ∀ c, (S ∩ Set.Iic (c)).Finite) :
-    ∃ f : ℕ → α, StrictMono (f) ∧ Filter.Tendsto (f) (Filter.atTop) (Filter.atTop) ∧
-      Set.range (f) = S := by
-  -- The rank of `s ∈ S`: the number of elements of `S` below `s`.
-  let g : S → ℕ := fun s => (S ∩ Set.Iio (s : α)).ncard
-  have hg : StrictMono (g) := by
-    intro s t hst
-    refine Set.ncard_lt_ncard (?_) ((hfin (t)).subset
-      (Set.inter_subset_inter_right (S) (Set.Iio_subset_Iic_self)))
-    refine ⟨Set.inter_subset_inter_right (S) (Set.Iio_subset_Iio (hst.le)), fun h => ?_⟩
-    exact lt_irrefl (_) ((h ⟨s.2, hst⟩).2)
-  have : Infinite (S) := hS.to_subtype
-  have : Infinite (Set.range (g)) := (Set.infinite_range_of_injective (hg.injective)).to_subtype
-  let e : ℕ ≃o S := (Nat.Subtype.orderIsoOfNat (Set.range (g))).trans
-    ((StrictMono.orderIso (g) (hg)).symm)
-  let f : ℕ → α := fun n => (e (n) : α)
-  have hf : StrictMono (f) := fun m n h => e.strictMono (h)
-  refine ⟨f, hf, ?_, ?_⟩
-  · refine Filter.tendsto_atTop_atTop.2 (fun c => ?_)
-    obtain ⟨n, hn⟩ := ((hfin (c)).preimage (hf.injective.injOn)).exists_notMem
-    refine ⟨n, fun m hm => ?_⟩
-    have hlt : c < f (n) := lt_of_not_ge (fun h => hn ⟨(e (n)).2, h⟩)
-    exact hlt.le.trans (hf.monotone (hm))
-  · refine Set.Subset.antisymm (?_) (fun s hs => ?_)
-    · rintro _ ⟨n, rfl⟩
-      exact (e (n)).2
-    · exact ⟨e.symm ⟨s, hs⟩, by simp [f]⟩
-
 /-- Every eigenvalue is nonnegative. -/
-theorem nonneg_of_mem_eigenvalueSet {P : Problem} {«λₙ» : ℝ} (hₙ : «λₙ» ∈ eigenvalueSet (P)) :
+lemma nonneg_of_mem_eigenvalueSet {P : Problem} {«λₙ» : ℝ} (hₙ : «λₙ» ∈ eigenvalueSet (P)) :
     0 ≤ «λₙ» := by
   -- TODO: prove, by multiplying `L X = -λ w X` by `X` and integrating by parts over `[a, b]`.
   sorry
 
 /-- The set of eigenvalues is infinite. -/
-theorem eigenvalueSet_infinite (P : Problem) : (eigenvalueSet (P)).Infinite := by
+lemma eigenvalueSet_infinite (P : Problem) : (eigenvalueSet (P)).Infinite := by
   -- TODO: prove.
   sorry
 
 /-- There are only finitely many eigenvalues below any bound `c`. -/
-theorem eigenvalueSet_inter_Iic_finite (P : Problem) (c : ℝ) :
+lemma eigenvalueSet_inter_Iic_finite (P : Problem) (c : ℝ) :
     (eigenvalueSet (P) ∩ Set.Iic (c)).Finite := by
   -- TODO: prove.
   sorry
@@ -121,9 +87,42 @@ theorem exists_eigenvalue_seq (P : Problem) :
     ∃ «λₙ» : ℕ → ℝ, StrictMono («λₙ») ∧ 0 ≤ «λₙ» (0) ∧
       Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop) ∧
       Set.range («λₙ») = eigenvalueSet (P) := by
-  obtain ⟨f, hf, ht, hr⟩ := exists_strictMono_tendsto_range_eq (eigenvalueSet_infinite (P))
-    (eigenvalueSet_inter_Iic_finite (P))
-  exact ⟨f, hf, nonneg_of_mem_eigenvalueSet (hr.subset (Set.mem_range_self (0))), ht, hr⟩
+  -- Spectral facts about `P`: every eigenvalue is nonnegative, there are infinitely many, and
+  -- only finitely many lie below any bound.
+  have hnonneg : ∀ «λₙ» ∈ eigenvalueSet (P), 0 ≤ «λₙ» := fun _ h => nonneg_of_mem_eigenvalueSet (h)
+  have hinf : (eigenvalueSet (P)).Infinite := eigenvalueSet_infinite (P)
+  have hfin : ∀ c, (eigenvalueSet (P) ∩ Set.Iic (c)).Finite := eigenvalueSet_inter_Iic_finite (P)
+  -- The rank `g s` of an eigenvalue `s`: the number of eigenvalues below `s`. It is strictly
+  -- increasing, as `s < t` adds `s` to the eigenvalues below `t`.
+  set S := eigenvalueSet (P)
+  let g : S → ℕ := fun s => (S ∩ Set.Iio (s : ℝ)).ncard
+  have hg : StrictMono (g) := by
+    intro s t hst
+    refine Set.ncard_lt_ncard (?_) ((hfin (t)).subset
+      (Set.inter_subset_inter_right (S) (Set.Iio_subset_Iic_self)))
+    refine ⟨Set.inter_subset_inter_right (S) (Set.Iio_subset_Iio (hst.le)), fun h => ?_⟩
+    exact lt_irrefl (_) ((h ⟨s.2, hst⟩).2)
+  -- Enumerate the eigenvalues in increasing order: `ℕ ≃o range g ≃o S`.
+  have : Infinite (S) := hinf.to_subtype
+  have : Infinite (Set.range (g)) := (Set.infinite_range_of_injective (hg.injective)).to_subtype
+  let e : ℕ ≃o S := (Nat.Subtype.orderIsoOfNat (Set.range (g))).trans
+    ((StrictMono.orderIso (g) (hg)).symm)
+  let f : ℕ → ℝ := fun n => (e (n) : ℝ)
+  -- `f` is strictly increasing: `λ₀ < λ₁ < ⋯`.
+  have hf : StrictMono (f) := fun m n h => e.strictMono (h)
+  -- `f` lists every eigenvalue.
+  have hr : Set.range (f) = S := by
+    refine Set.Subset.antisymm (?_) (fun s hs => ?_)
+    · rintro _ ⟨n, rfl⟩
+      exact (e (n)).2
+    · exact ⟨e.symm ⟨s, hs⟩, by simp [f]⟩
+  refine ⟨f, hf, hnonneg (_) (hr.subset (Set.mem_range_self (0))), ?_, hr⟩
+  -- `λₙ → +∞`: only finitely many `n` have `λₙ ≤ c`, so some `λₙ > c`, and then every later one.
+  refine Filter.tendsto_atTop_atTop.2 (fun c => ?_)
+  obtain ⟨n, hn⟩ := ((hfin (c)).preimage (hf.injective.injOn)).exists_notMem
+  refine ⟨n, fun m hm => ?_⟩
+  have hlt : c < f (n) := lt_of_not_ge (fun h => hn ⟨(e (n)).2, h⟩)
+  exact hlt.le.trans (hf.monotone (hm))
 
 /-- The eigenvalues of `P` in increasing order, `λ₀ < λ₁ < ⋯`. -/
 noncomputable def eigenvalues (P : Problem) : ℕ → ℝ :=
