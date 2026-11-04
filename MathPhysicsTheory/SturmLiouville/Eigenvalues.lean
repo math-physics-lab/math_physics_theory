@@ -77,38 +77,6 @@ theorem exists_eigenvalue_seq (P : Problem) :
 noncomputable def eigenvalues (P : Problem) : ℕ → ℝ :=
   Classical.choose (exists_eigenvalue_seq (P))
 
-/-- The eigenvalues are strictly increasing: `λ₀ < λ₁ < ⋯`. -/
-lemma eigenvalues_strictMono (P : Problem) : StrictMono (eigenvalues (P)) :=
-  (Classical.choose_spec (exists_eigenvalue_seq (P))).1
-
-/-- The smallest eigenvalue is nonnegative: `0 ≤ λ₀`. -/
-lemma eigenvalues_zero_nonneg (P : Problem) : 0 ≤ eigenvalues (P) (0) :=
-  (Classical.choose_spec (exists_eigenvalue_seq (P))).2.1
-
-/-- The eigenvalues tend to infinity: `λₙ → +∞`. -/
-lemma eigenvalues_tendsto_atTop (P : Problem) :
-    Filter.Tendsto (eigenvalues (P)) (Filter.atTop) (Filter.atTop) :=
-  (Classical.choose_spec (exists_eigenvalue_seq (P))).2.2.1
-
-/-- The sequence `λ₀ < λ₁ < ⋯` lists every eigenvalue. -/
-lemma range_eigenvalues (P : Problem) : Set.range (eigenvalues (P)) = eigenvalueSet (P) :=
-  (Classical.choose_spec (exists_eigenvalue_seq (P))).2.2.2
-
-/-- The set of eigenvalues is countable. -/
-theorem eigenvalueSet_countable (P : Problem) : (eigenvalueSet (P)).Countable :=
-  range_eigenvalues (P) ▸ Set.countable_range (eigenvalues (P))
-
-/-- The set of eigenvalues is infinite. -/
-theorem eigenvalueSet_infinite (P : Problem) : (eigenvalueSet (P)).Infinite :=
-  range_eigenvalues (P) ▸ Set.infinite_range_of_injective ((eigenvalues_strictMono (P)).injective)
-
-/-- Every eigenvalue is nonnegative. -/
-theorem nonneg_of_mem_eigenvalueSet {P : Problem} {«λₙ» : ℝ} (hₙ : «λₙ» ∈ eigenvalueSet (P)) :
-    0 ≤ «λₙ» := by
-  obtain ⟨n, rfl⟩ := range_eigenvalues (P) ▸ hₙ
-  exact (eigenvalues_zero_nonneg (P)).trans
-    ((eigenvalues_strictMono (P)).monotone (Nat.zero_le (n)))
-
 /-- Each eigenvalue `λₙ` corresponds to a single eigenfunction, up to a constant factor: two
 eigenfunctions `Xₙ`, `Yₙ` for `λₙ` are proportional on `[a, b]`. -/
 theorem isEigenfunction_proportional (P : Problem) {«λₙ» : ℝ} {Xₙ Yₙ : ℝ → ℝ}

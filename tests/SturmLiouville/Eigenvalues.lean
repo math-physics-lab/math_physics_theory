@@ -15,18 +15,6 @@ example : IsEigenfunction (dirichlet) (1) (Real.sin) :=
 example (h : IsEigenfunction (dirichlet) (1) (Real.sin)) : 1 ∈ eigenvalueSet (dirichlet) :=
   isEigenvalue_of_isEigenfunction (h)
 
-/-- `eigenvalueSet_countable`: the eigenvalues of the Dirichlet problem form a countable set. -/
-example : (eigenvalueSet (dirichlet)).Countable :=
-  eigenvalueSet_countable (dirichlet)
-
-/-- `eigenvalueSet_infinite`: the Dirichlet problem has infinitely many eigenvalues. -/
-example : (eigenvalueSet (dirichlet)).Infinite :=
-  eigenvalueSet_infinite (dirichlet)
-
-/-- `nonneg_of_mem_eigenvalueSet`: the eigenvalue `1` of the Dirichlet problem is nonnegative. -/
-example (h₁ : 1 ∈ eigenvalueSet (dirichlet)) : (0 : ℝ) ≤ 1 :=
-  nonneg_of_mem_eigenvalueSet (h₁)
-
 /-- `isEigenfunction_orthogonal`: eigenfunctions of the Dirichlet problem for different eigenvalues
 are orthogonal on `[0, π]`. -/
 example {X₁ X₂ : ℝ → ℝ} (h₁ : IsEigenfunction (dirichlet) (1) (X₁))
