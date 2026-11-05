@@ -29,13 +29,16 @@ noncomputable def dirichlet : Problem where
 
 /-- `sin` solves `y'' = -y`, `y(0) = 0`, `y(π) = 0`. -/
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
-  simp [dirichlet, Operator.apply, Robin.Operator.Satisfies,
-    Robin.Operator.apply]
+  refine ⟨Real.contDiff_sin.contDiffOn, fun x hx => ?_, ?_, ?_⟩
+  · rw [Operator.applyWithin_eq_apply (_) (uniqueDiffOn_Icc (dirichlet.a_lt_b)) (hx)
+      (Real.differentiable_sin) (by simp [dirichlet])]
+    simp [dirichlet, Operator.apply]
+  all_goals simp [dirichlet, Robin.Operator.SatisfiesWithin, Robin.Operator.applyWithin]
 
 /-- `cos` solves `y'' = -y` but not `y(0) = 0`. -/
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
-  simp [dirichlet, Problem.IsSolution, Robin.Operator.Satisfies, Robin.Operator.apply]
+  simp [dirichlet, Problem.IsSolution, Robin.Operator.SatisfiesWithin,
+    Robin.Operator.applyWithin]
 
 /-- `isSolution_zero` as a method: `y = 0` solves the Dirichlet problem for any `λ`. -/
 example («λ» : ℝ) : dirichlet.IsSolution («λ») (0) := dirichlet.isSolution_zero («λ»)

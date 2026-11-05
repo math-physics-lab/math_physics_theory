@@ -27,3 +27,11 @@ example : ({ α := 2, β := 3, c := 0 : Operator }).Satisfies (fun _ => 5) (Real
 /-- `sin` satisfies the homogeneous Dirichlet condition `y(π) = 0`. -/
 example : ({ α := 1, β := 0, c := Real.pi : Operator }).Satisfies (0) (Real.sin) := by
   simp [Operator.Satisfies, Operator.apply]
+
+/-- `applyWithin_eq_apply`: for `exp`, the derivative within `[0, 1]` at `0` is the usual one, so
+`-exp(0) + exp'(0) = 0`. -/
+example :
+    ({ α := -1, β := 1, c := 0 : Operator }).applyWithin (Set.Icc (0) (1)) (Real.exp) = 0 := by
+  rw [Operator.applyWithin_eq_apply (_) (uniqueDiffOn_Icc (zero_lt_one) (_)
+    (Set.left_mem_Icc.2 (zero_le_one))) (Real.differentiable_exp (_))]
+  simp [Operator.apply]

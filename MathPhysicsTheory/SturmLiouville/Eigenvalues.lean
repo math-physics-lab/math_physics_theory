@@ -31,16 +31,23 @@ For the Dirichlet problem `y'' = -λ y` on `[0, π]` with `y(0) = 0`, `y(π) = 0
 problem and is nonzero at `π / 2`.
 
 ```lean
-example : Eigenvalues.IsEigenvalue (dirichlet) (1) :=
-  ⟨Real.sin, ⟨⟨Real.contDiff_sin.contDiffOn, by simp [dirichlet, Operator.apply,
-    Robin.Operator.Satisfies, Robin.Operator.apply]⟩, Real.pi / 2,
-    ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩⟩
+example : Eigenvalues.IsEigenvalue (dirichlet) (1) := by
+  refine ⟨Real.sin, ⟨Real.contDiff_sin.contDiffOn, fun x hx => ?_, ?_, ?_⟩, Real.pi / 2,
+    ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩
+  · rw [Operator.applyWithin_eq_apply (_) (uniqueDiffOn_Icc (dirichlet.a_lt_b)) (hx)
+      (Real.differentiable_sin) (by simp [dirichlet])]
+    simp [dirichlet, Operator.apply]
+  all_goals simp [dirichlet, Robin.Operator.SatisfiesWithin, Robin.Operator.applyWithin]
 ```
 
 ## References
 
 * R. L. Herman, *Introduction to Partial Differential Equations*, §4.1
   "Sturm-Liouville Operators".
+* G. Birkhoff, G.-C. Rota, *Ordinary Differential Equations*, Ch. 10 "The Sturm-Liouville
+  Systems".
+* E. A. Coddington, N. Levinson, *Theory of Ordinary Differential Equations*, Ch. 8.
+* G. Teschl, *Ordinary Differential Equations and Dynamical Systems*, §5.5 "Oscillation theory".
 -/
 
 @[expose] public section
@@ -65,13 +72,1104 @@ theorem isEigenvalue_of_isEigenfunction {P : Problem} {«λₙ» : ℝ} {Xₙ : 
     (h : IsEigenfunction (P) («λₙ») (Xₙ)) : IsEigenvalue (P) («λₙ») :=
   ⟨Xₙ, h⟩
 
+section ExistsEigenvalueSeq
+
+/-! ### Green's identity and the Rayleigh quotient -/
+
+open Set Filter Topology MeasureTheory
+
+/-- `Y` solves `(p Y')' + q Y = -μ w Y` on `[a, b]`, with `Y'` its derivative within `[a, b]`. -/
+private def Honest (P : Problem) (μ : ℝ) (Y Y' : ℝ → ℝ) : Prop :=
+  (∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (Y) (Y' (x)) (Icc (P.a) (P.b)) (x)) ∧
+    ContinuousOn (Y') (Icc (P.a) (P.b)) ∧
+    ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (fun y => P.L.p (y) * Y' (y))
+      (-(μ * P.w (x) + P.L.q (x)) * Y (x)) (Icc (P.a) (P.b)) (x)
+
+private lemma Honest.continuousOn {P : Problem} {μ : ℝ} {Y Y' : ℝ → ℝ}
+    (h : Honest (P) (μ) (Y) (Y')) :
+    ContinuousOn (Y) (Icc (P.a) (P.b)) :=
+  fun x hx => (h.1 (x) (hx)).continuousWithinAt
+
+private lemma Honest.const_mul {P : Problem} {μ : ℝ} {Y Y' : ℝ → ℝ} (h : Honest (P) (μ) (Y) (Y'))
+    (c : ℝ) : Honest (P) (μ) (fun x => c * Y (x)) (fun x => c * Y' (x)) := by
+  refine ⟨fun x hx => (h.1 (x) (hx)).const_mul (c), continuousOn_const.mul (h.2.1),
+    fun x hx => ?_⟩
+  have := (h.2.2 (x) (hx)).const_mul (c)
+  convert this using 1
+  · funext y
+    ring
+  · ring
+
+/-- A continuous function on `[a, b]` is interval integrable. -/
+private lemma intervalIntegrable_of_continuousOn {a b : ℝ} (hab : a ≤ b) {f : ℝ → ℝ}
+    (hf : ContinuousOn (f) (Icc (a) (b))) : IntervalIntegrable (f) (volume) (a) (b) :=
+  ContinuousOn.intervalIntegrable (by rwa [uIcc_of_le (hab)])
+
+/-- An eigenfunction solves the equation on `[a, b]`, with derivatives within `[a, b]`. -/
+private lemma honest_of_isSolution {P : Problem} {μ : ℝ} {X : ℝ → ℝ}
+    (hX : P.IsSolution (μ) (X)) : Honest (P) (μ) (X) (derivWithin (X) (Icc (P.a) (P.b))) := by
+  have hU : UniqueDiffOn (ℝ) (Icc (P.a) (P.b)) := uniqueDiffOn_Icc (P.a_lt_b)
+  obtain ⟨hC2, hode, -, -⟩ := hX
+  have hdiff : DifferentiableOn (ℝ) (X) (Icc (P.a) (P.b)) := hC2.differentiableOn (by norm_num)
+  have hC1 : ContDiffOn (ℝ) (1) (derivWithin (X) (Icc (P.a) (P.b))) (Icc (P.a) (P.b)) :=
+    hC2.derivWithin (hU) (by norm_num)
+  have hgd : DifferentiableOn (ℝ) (fun y => P.L.p (y) * derivWithin (X) (Icc (P.a) (P.b)) (y))
+      (Icc (P.a) (P.b)) := (P.assumptions.p_contDiffOn.mul (hC1)).differentiableOn (by norm_num)
+  refine ⟨fun x hx => (hdiff (x) (hx)).hasDerivWithinAt, hC1.continuousOn, fun x hx => ?_⟩
+  have h := hode (x) (hx)
+  simp only [Operator.applyWithin] at h
+  have hx' : derivWithin (fun y => P.L.p (y) * derivWithin (X) (Icc (P.a) (P.b)) (y))
+      (Icc (P.a) (P.b)) (x) = -(μ * P.w (x) + P.L.q (x)) * X (x) := by
+    linarith
+  rw [← hx']
+  exact (hgd (x) (hx)).hasDerivWithinAt
+
+/-- The data of an eigenfunction: it solves the equation on `[a, b]`, satisfies both Robin
+conditions, and is nonzero somewhere. -/
+private lemma eigenfunction_data {P : Problem} {μ : ℝ} {X : ℝ → ℝ}
+    (hX : IsEigenfunction (P) (μ) (X)) :
+    Honest (P) (μ) (X) (derivWithin (X) (Icc (P.a) (P.b))) ∧
+      P.Ba.α * X (P.a) + P.Ba.β * derivWithin (X) (Icc (P.a) (P.b)) (P.a) = 0 ∧
+      P.Bb.α * X (P.b) + P.Bb.β * derivWithin (X) (Icc (P.a) (P.b)) (P.b) = 0 ∧
+      ∃ x ∈ Icc (P.a) (P.b), X (x) ≠ 0 := by
+  obtain ⟨hS, hne⟩ := hX
+  have hBa := hS.2.2.1
+  have hBb := hS.2.2.2
+  simp only [BoundaryConditions.Robin.Operator.SatisfiesWithin,
+    BoundaryConditions.Robin.Operator.applyWithin, Pi.zero_apply, P.assumptions.Ba_c,
+    P.assumptions.Bb_c] at hBa hBb
+  exact ⟨honest_of_isSolution (hS), hBa, hBb, hne⟩
+
+/-- Green's identity: `∫ₐᵇ ((p Y')' Z + p Y' Z') = [p Y' Z]ₐᵇ`. -/
+private lemma green {P : Problem} {μ : ℝ} {Y Y' Z Z' : ℝ → ℝ} (hY : Honest (P) (μ) (Y) (Y'))
+    (hZ : ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (Z) (Z' (x)) (Icc (P.a) (P.b)) (x))
+    (hZ' : ContinuousOn (Z') (Icc (P.a) (P.b))) :
+    ∫ x in (P.a)..(P.b),
+        (-(μ * P.w (x) + P.L.q (x)) * Y (x) * Z (x) + P.L.p (x) * Y' (x) * Z' (x)) =
+      P.L.p (P.b) * Y' (P.b) * Z (P.b) - P.L.p (P.a) * Y' (P.a) * Z (P.a) := by
+  have hab := P.a_lt_b.le
+  have hu : uIcc (P.a) (P.b) = Icc (P.a) (P.b) := uIcc_of_le (hab)
+  have hYc := hY.continuousOn
+  have h1 : ContinuousOn (fun x => -(μ * P.w (x) + P.L.q (x)) * Y (x)) (Icc (P.a) (P.b)) :=
+    ((continuousOn_const.mul (P.assumptions.w_continuousOn)).add
+      (P.assumptions.q_continuousOn)).neg.mul (hYc)
+  have := intervalIntegral.integral_deriv_mul_eq_sub_of_hasDerivWithinAt
+    (u := fun y => P.L.p (y) * Y' (y)) (v := Z)
+    (u' := fun x => -(μ * P.w (x) + P.L.q (x)) * Y (x)) (v' := Z')
+    (by rw [hu]; exact hY.2.2) (by rw [hu]; exact hZ)
+    (intervalIntegrable_of_continuousOn (hab) (h1)) (intervalIntegrable_of_continuousOn (hab) (hZ'))
+  simpa only using this
+
+/-- At `a`, the Robin condition with `α β ≤ 0`, or a Dirichlet condition, gives `y' y ≥ 0`. -/
+private lemma boundary_nonneg {α β y y' : ℝ} (hne : α ≠ 0 ∨ β ≠ 0) (hαβ : α * β ≤ 0)
+    (h : α * y + β * y' = 0 ∨ y = 0) : 0 ≤ y' * y := by
+  rcases h with h | h
+  · by_cases hβ : β = 0
+    · have hα : α ≠ 0 := hne.resolve_right (not_not.2 (hβ))
+      subst hβ
+      have : y = 0 := by
+        have : α * y = 0 := by linarith
+        exact (mul_eq_zero.1 (this)).resolve_left (hα)
+      simp [this]
+    · have key : β ^ 2 * (y' * y) = -(α * β) * y ^ 2 := by
+        have hb : β * y' = -(α * y) := by linarith
+        calc β ^ 2 * (y' * y) = (β * y') * (β * y) := by ring
+          _ = -(α * y) * (β * y) := by rw [hb]
+          _ = -(α * β) * y ^ 2 := by ring
+      have hb : 0 < β ^ 2 := by positivity
+      have : 0 ≤ β ^ 2 * (y' * y) := by
+        rw [key]
+        exact mul_nonneg (by linarith) (sq_nonneg (y))
+      exact (mul_nonneg_iff_of_pos_left (hb)).1 (this)
+  · simp [h]
+
+/-- The Wronskian `y' z - y z'` vanishes when `y` and `z` satisfy the same Robin condition. -/
+private lemma wronskian_eq_zero {α β y y' z z' : ℝ} (hne : α ≠ 0 ∨ β ≠ 0)
+    (hy : α * y + β * y' = 0) (hz : α * z + β * z' = 0) : y' * z - y * z' = 0 := by
+  rcases hne with hα | hβ
+  · have : α * (y' * z - y * z') = 0 := by linear_combination y' * hz - z' * hy
+    exact (mul_eq_zero.1 (this)).resolve_left (hα)
+  · have : β * (y' * z - y * z') = 0 := by linear_combination z * hy - y * hz
+    exact (mul_eq_zero.1 (this)).resolve_left (hβ)
+
+/-- The Rayleigh quotient: `∫ p Y'² ≤ μ ∫ w Y²` when `Y` satisfies, at each endpoint, the Robin
+condition or a Dirichlet condition. -/
+private lemma rayleigh {P : Problem} {μ : ℝ} {Y Y' : ℝ → ℝ} (hY : Honest (P) (μ) (Y) (Y'))
+    (ha : P.Ba.α * Y (P.a) + P.Ba.β * Y' (P.a) = 0 ∨ Y (P.a) = 0)
+    (hb : P.Bb.α * Y (P.b) + P.Bb.β * Y' (P.b) = 0 ∨ Y (P.b) = 0) :
+    ∫ x in (P.a)..(P.b), P.L.p (x) * Y' (x) ^ 2 ≤ μ * ∫ x in (P.a)..(P.b), P.w (x) * Y (x) ^ 2 := by
+  have hab := P.a_lt_b.le
+  have hYc := hY.continuousOn
+  have hY'c := hY.2.1
+  have hG := green (hY) (hY.1) (hY'c)
+  have hpa := P.assumptions.p_pos (P.a) (left_mem_Icc.2 (hab))
+  have hpb := P.assumptions.p_pos (P.b) (right_mem_Icc.2 (hab))
+  have hA : 0 ≤ Y' (P.a) * Y (P.a) :=
+    boundary_nonneg (P.assumptions.Ba_ne) (P.assumptions.Ba_mul_nonpos) (ha)
+  have hB : Y' (P.b) * Y (P.b) ≤ 0 := by
+    have := boundary_nonneg (α := P.Bb.α) (β := -P.Bb.β) (y := Y (P.b)) (y' := -Y' (P.b))
+      (by rcases P.assumptions.Bb_ne with h | h
+          · exact Or.inl (h)
+          · exact Or.inr (neg_ne_zero.2 (h)))
+      (by nlinarith [P.assumptions.Bb_mul_nonneg])
+      (by rcases hb with h | h
+          · exact Or.inl (by linarith)
+          · exact Or.inr (h))
+    linarith
+  have hw := P.assumptions.w_continuousOn
+  have hq := P.assumptions.q_continuousOn
+  have hp : ContinuousOn (P.L.p) (Icc (P.a) (P.b)) := P.assumptions.p_contDiffOn.continuousOn
+  have i1 : IntervalIntegrable (fun x => -(μ * P.w (x) + P.L.q (x)) * Y (x) * Y (x) +
+      P.L.p (x) * Y' (x) * Y' (x)) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab) (((((continuousOn_const.mul (hw)).add (hq)).neg.mul
+      (hYc)).mul (hYc)).add (((hp.mul (hY'c)).mul (hY'c))))
+  have i2 : IntervalIntegrable (fun x => μ * (P.w (x) * Y (x) ^ 2)) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab) (continuousOn_const.mul ((hw.mul ((hYc.pow (2))))))
+  have i3 : IntervalIntegrable (fun x => P.L.q (x) * Y (x) ^ 2) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab) (hq.mul (hYc.pow (2)))
+  have e : (fun x => P.L.p (x) * Y' (x) ^ 2) = fun x =>
+      (-(μ * P.w (x) + P.L.q (x)) * Y (x) * Y (x) + P.L.p (x) * Y' (x) * Y' (x)) +
+        μ * (P.w (x) * Y (x) ^ 2) + P.L.q (x) * Y (x) ^ 2 := by
+    funext x
+    ring
+  rw [e, intervalIntegral.integral_add ((i1.add (i2))) (i3),
+    intervalIntegral.integral_add (i1) (i2), hG, intervalIntegral.integral_const_mul]
+  have hq0 : ∫ x in (P.a)..(P.b), P.L.q (x) * Y (x) ^ 2 ≤ 0 := by
+    have := intervalIntegral.integral_nonneg (hab) (μ := volume)
+      (f := fun x => -(P.L.q (x) * Y (x) ^ 2))
+      (fun x hx => by
+        have := P.assumptions.q_nonpos (x) (hx)
+        nlinarith [sq_nonneg (Y (x))])
+    rw [intervalIntegral.integral_neg] at this
+    linarith
+  nlinarith
+
+/-- The integral of a continuous nonnegative function on `[a, b]` that is nonzero at some point is
+positive. -/
+private lemma integral_pos_of_ne_zero {a b : ℝ} (hab : a < b) {f : ℝ → ℝ}
+    (hf : ContinuousOn (f) (Icc (a) (b))) (h0 : ∀ x ∈ Icc (a) (b), 0 ≤ f (x)) {x₀ : ℝ}
+    (hx₀ : x₀ ∈ Icc (a) (b)) (hne : f (x₀) ≠ 0) : 0 < ∫ x in (a)..(b), f (x) := by
+  -- a point of `(a, b)` where `f ≠ 0`
+  have hev : ∀ᶠ x in 𝓝[Icc (a) (b)] x₀, f (x) ≠ 0 :=
+    (hf (x₀) (hx₀)).eventually (isOpen_ne.mem_nhds (hne))
+  have hNe : (𝓝[Ioo (a) (b)] x₀).NeBot :=
+    mem_closure_iff_nhdsWithin_neBot.1 (by rwa [closure_Ioo (hab.ne)])
+  obtain ⟨x₁, hx₁f, hx₁⟩ :=
+    ((hev.filter_mono (nhdsWithin_mono (x₀) (Ioo_subset_Icc_self))).and
+      (self_mem_nhdsWithin)).exists
+  have hU : IsOpen (Ioo (a) (b) ∩ f ⁻¹' {0}ᶜ) :=
+    (hf.mono (Ioo_subset_Icc_self)).isOpen_inter_preimage (isOpen_Ioo) (isOpen_compl_singleton)
+  have hfi := intervalIntegrable_of_continuousOn (hab.le) (hf)
+  have hnn : 0 ≤ᵐ[volume.restrict (uIoc (a) (b))] f := by
+    rw [uIoc_of_le (hab.le)]
+    exact (ae_restrict_mem (measurableSet_Ioc)).mono
+      (fun x hx => h0 (x) (Ioc_subset_Icc_self (hx)))
+  refine (intervalIntegral.integral_pos_iff_support_of_nonneg_ae' (hnn) (hfi)).2 ⟨hab, ?_⟩
+  refine lt_of_lt_of_le (hU.measure_pos (volume) ⟨x₁, hx₁, hx₁f⟩) (measure_mono (?_))
+  intro x hx
+  exact ⟨hx.2, Ioo_subset_Ioc_self (hx.1)⟩
+
+/-- The eigenvalues of `P` are nonnegative. -/
+private lemma eigenvalue_nonneg {P : Problem} {μ : ℝ} (hμ : IsEigenvalue (P) (μ)) : 0 ≤ μ := by
+  obtain ⟨X, hX⟩ := hμ
+  obtain ⟨hH, ha, hb, x₀, hx₀, hne⟩ := eigenfunction_data (hX)
+  have hab := P.a_lt_b
+  have hR := rayleigh (hH) (Or.inl (ha)) (Or.inl (hb))
+  have hpos : 0 < ∫ x in (P.a)..(P.b), P.w (x) * X (x) ^ 2 :=
+    integral_pos_of_ne_zero (hab) (P.assumptions.w_continuousOn.mul (hH.continuousOn.pow (2)))
+      (fun x hx => mul_nonneg ((P.assumptions.w_pos (x) (hx)).le) (sq_nonneg (_))) (hx₀)
+      (mul_ne_zero ((P.assumptions.w_pos (x₀) (hx₀)).ne') (pow_ne_zero (2) (hne)))
+  have hp0 : 0 ≤ ∫ x in (P.a)..(P.b), P.L.p (x) * derivWithin (X) (Icc (P.a) (P.b)) (x) ^ 2 :=
+    intervalIntegral.integral_nonneg (hab.le)
+      (fun x hx => mul_nonneg ((P.assumptions.p_pos (x) (hx)).le) (sq_nonneg (_)))
+  by_contra hneg
+  push Not at hneg
+  nlinarith
+
+/-! ### Finitely many eigenvalues below each bound -/
+
+/-- Eigenfunctions for different eigenvalues, with vanishing Wronskians at the endpoints, are
+orthogonal with weight `w`. -/
+private lemma orthogonal {P : Problem} {μ ν : ℝ} {Y Y' Z Z' : ℝ → ℝ} (hY : Honest (P) (μ) (Y) (Y'))
+    (hZ : Honest (P) (ν) (Z) (Z')) (hne : μ ≠ ν)
+    (ha : Y' (P.a) * Z (P.a) - Y (P.a) * Z' (P.a) = 0)
+    (hb : Y' (P.b) * Z (P.b) - Y (P.b) * Z' (P.b) = 0) :
+    ∫ x in (P.a)..(P.b), P.w (x) * (Y (x) * Z (x)) = 0 := by
+  have hab := P.a_lt_b.le
+  have h1 := green (hY) (hZ.1) (hZ.2.1)
+  have h2 := green (hZ) (hY.1) (hY.2.1)
+  have hw := P.assumptions.w_continuousOn
+  have hq := P.assumptions.q_continuousOn
+  have hp : ContinuousOn (P.L.p) (Icc (P.a) (P.b)) := P.assumptions.p_contDiffOn.continuousOn
+  have hYc := hY.continuousOn
+  have hZc := hZ.continuousOn
+  have i1 : IntervalIntegrable (fun x => -(μ * P.w (x) + P.L.q (x)) * Y (x) * Z (x) +
+      P.L.p (x) * Y' (x) * Z' (x)) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab) (((((continuousOn_const.mul (hw)).add (hq)).neg.mul
+      (hYc)).mul (hZc)).add (((hp.mul (hY.2.1)).mul (hZ.2.1))))
+  have i2 : IntervalIntegrable (fun x => -(ν * P.w (x) + P.L.q (x)) * Z (x) * Y (x) +
+      P.L.p (x) * Z' (x) * Y' (x)) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab) (((((continuousOn_const.mul (hw)).add (hq)).neg.mul
+      (hZc)).mul (hYc)).add (((hp.mul (hZ.2.1)).mul (hY.2.1))))
+  have hsub := intervalIntegral.integral_sub (i1) (i2)
+  rw [h1, h2] at hsub
+  have e : (fun x => (-(μ * P.w (x) + P.L.q (x)) * Y (x) * Z (x) + P.L.p (x) * Y' (x) * Z' (x)) -
+      (-(ν * P.w (x) + P.L.q (x)) * Z (x) * Y (x) + P.L.p (x) * Z' (x) * Y' (x))) =
+      fun x => (ν - μ) * (P.w (x) * (Y (x) * Z (x))) := by
+    funext x
+    ring
+  rw [e, intervalIntegral.integral_const_mul] at hsub
+  have hzero : (ν - μ) * ∫ x in (P.a)..(P.b), P.w (x) * (Y (x) * Z (x)) = 0 := by
+    rw [hsub]
+    linear_combination P.L.p (P.b) * hb - P.L.p (P.a) * ha
+  exact (mul_eq_zero.1 (hzero)).resolve_left (sub_ne_zero.2 (hne.symm))
+
+/-- A Hölder-type estimate: `|Z x - Z y| ≤ t |x - y| / 2 + (∫ Z'²) / (2 t)`. -/
+private lemma abs_sub_le_of_integral_sq {a b : ℝ} (hab : a < b) {Z Z' : ℝ → ℝ}
+    (hZ : ∀ x ∈ Icc (a) (b), HasDerivWithinAt (Z) (Z' (x)) (Icc (a) (b)) (x))
+    (hZ' : ContinuousOn (Z') (Icc (a) (b))) {C : ℝ} (hC : ∫ x in (a)..(b), Z' (x) ^ 2 ≤ C)
+    {t : ℝ} (ht : 0 < t) :
+    ∀ x ∈ Icc (a) (b), ∀ y ∈ Icc (a) (b), |Z (x) - Z (y)| ≤ t * |x - y| / 2 + C / (2 * t) := by
+  have key : ∀ x ∈ Icc (a) (b), ∀ y ∈ Icc (a) (b), y ≤ x →
+      |Z (x) - Z (y)| ≤ t * |x - y| / 2 + C / (2 * t) := by
+    intro x hx y hy hyx
+    have hsub : Icc (y) (x) ⊆ Icc (a) (b) := Icc_subset_Icc (hy.1) (hx.2)
+    have hZc : ContinuousOn (Z) (Icc (a) (b)) := fun x hx => (hZ (x) (hx)).continuousWithinAt
+    have hint : IntervalIntegrable (Z') (volume) (y) (x) :=
+      intervalIntegrable_of_continuousOn (hyx) (hZ'.mono (hsub))
+    have hftc : ∫ s in (y)..(x), Z' (s) = Z (x) - Z (y) :=
+      intervalIntegral.integral_eq_sub_of_hasDerivAt_of_le (hyx) (hZc.mono (hsub))
+        (fun s hs => (hZ (s) (hsub (Ioo_subset_Icc_self (hs)))).hasDerivAt
+          (Icc_mem_nhds (lt_of_le_of_lt (hy.1) (hs.1)) (lt_of_lt_of_le (hs.2) (hx.2)))) (hint)
+    have hsq : IntervalIntegrable (fun s => Z' (s) ^ 2) (volume) (y) (x) :=
+      intervalIntegrable_of_continuousOn (hyx) ((hZ'.pow (2)).mono (hsub))
+    have h1 : |∫ s in (y)..(x), Z' (s)| ≤ ∫ s in (y)..(x), |Z' (s)| :=
+      intervalIntegral.abs_integral_le_integral_abs (hyx)
+    have h2 : ∫ s in (y)..(x), |Z' (s)| ≤ ∫ s in (y)..(x), (t / 2 + Z' (s) ^ 2 / (2 * t)) := by
+      refine intervalIntegral.integral_mono_on (hyx) (hint.abs) ((intervalIntegrable_const).add
+        (hsq.div_const (_))) (fun s _ => ?_)
+      have : 2 * t * |Z' (s)| ≤ t ^ 2 + Z' (s) ^ 2 := by
+        nlinarith [sq_nonneg (|Z' (s)| - t), sq_abs (Z' (s))]
+      rw [div_add_div (_) (_) (two_ne_zero) (mul_ne_zero (two_ne_zero) (ht.ne')),
+        le_div_iff₀ (by positivity)]
+      nlinarith
+    have h3 : ∫ s in (y)..(x), (t / 2 + Z' (s) ^ 2 / (2 * t)) =
+        (x - y) * (t / 2) + (∫ s in (y)..(x), Z' (s) ^ 2) / (2 * t) := by
+      rw [intervalIntegral.integral_add (intervalIntegrable_const) (hsq.div_const (_)),
+        intervalIntegral.integral_const, intervalIntegral.integral_div, smul_eq_mul]
+    have h4 : ∫ s in (y)..(x), Z' (s) ^ 2 ≤ C := by
+      refine le_trans (intervalIntegral.integral_mono_interval (hy.1) (hyx) (hx.2) (?_)
+        (intervalIntegrable_of_continuousOn (hab.le) (hZ'.pow (2)))) (hC)
+      exact Eventually.of_forall (fun s => sq_nonneg (Z' (s)))
+    rw [← hftc, abs_of_nonneg (sub_nonneg.2 (hyx))]
+    have : (∫ s in (y)..(x), Z' (s) ^ 2) / (2 * t) ≤ C / (2 * t) :=
+      div_le_div_of_nonneg_right (h4) (by positivity)
+    nlinarith
+  intro x hx y hy
+  rcases le_total (y) (x) with h | h
+  · exact key (x) (hx) (y) (hy) (h)
+  · rw [abs_sub_comm, abs_sub_comm (x)]
+    exact key (y) (hy) (x) (hx) (h)
+
+/-- Positive lower and upper bounds of a continuous positive function on `[a, b]`. -/
+private lemma exists_pos_bounds {a b : ℝ} (hab : a ≤ b) {f : ℝ → ℝ}
+    (hf : ContinuousOn (f) (Icc (a) (b))) (hpos : ∀ x ∈ Icc (a) (b), 0 < f (x)) :
+    ∃ m M : ℝ, 0 < m ∧ ∀ x ∈ Icc (a) (b), m ≤ f (x) ∧ f (x) ≤ M := by
+  obtain ⟨x₁, hx₁, hmin⟩ := isCompact_Icc.exists_isMinOn (nonempty_Icc.2 (hab)) (hf)
+  obtain ⟨x₂, -, hmax⟩ := isCompact_Icc.exists_isMaxOn (nonempty_Icc.2 (hab)) (hf)
+  exact ⟨f (x₁), f (x₂), hpos (x₁) (hx₁), fun x hx => ⟨hmin (hx), hmax (hx)⟩⟩
+
+/-- Only finitely many eigenvalues of `P` lie below each bound. -/
+private lemma eigenvalueSet_inter_Iic_finite (P : Problem) (M : ℝ) :
+    (eigenvalueSet (P) ∩ Iic (M)).Finite := by
+  have hab := P.a_lt_b
+  by_contra hinf
+  set S := eigenvalueSet (P) ∩ Iic (M)
+  have hS : S.Infinite := hinf
+  -- normalised eigenfunctions
+  have hdata : ∀ μ, ∃ Z Z' : ℝ → ℝ, μ ∈ S →
+      Honest (P) (μ) (Z) (Z') ∧ ∫ x in (P.a)..(P.b), P.w (x) * Z (x) ^ 2 = 1 ∧
+      P.Ba.α * Z (P.a) + P.Ba.β * Z' (P.a) = 0 ∧ P.Bb.α * Z (P.b) + P.Bb.β * Z' (P.b) = 0 := by
+    intro μ
+    by_cases hμ : μ ∈ S
+    swap
+    · exact ⟨0, 0, fun h => absurd (h) (hμ)⟩
+    obtain ⟨⟨X, hX⟩, -⟩ := hμ
+    obtain ⟨hH, ha, hb, x₀, hx₀, hne⟩ := eigenfunction_data (hX)
+    set s := ∫ x in (P.a)..(P.b), P.w (x) * X (x) ^ 2
+    have hs : 0 < s :=
+      integral_pos_of_ne_zero (hab) (P.assumptions.w_continuousOn.mul (hH.continuousOn.pow (2)))
+        (fun x hx => mul_nonneg ((P.assumptions.w_pos (x) (hx)).le) (sq_nonneg (_))) (hx₀)
+        (mul_ne_zero ((P.assumptions.w_pos (x₀) (hx₀)).ne') (pow_ne_zero (2) (hne)))
+    set c := 1 / Real.sqrt (s)
+    have hc2 : c ^ 2 * s = 1 := by
+      simp only [c, div_pow, one_pow, Real.sq_sqrt (hs.le)]
+      field_simp
+    refine ⟨fun x => c * X (x), fun x => c * derivWithin (X) (Icc (P.a) (P.b)) (x),
+      fun _ => ⟨hH.const_mul (c), ?_, by linear_combination c * ha, by linear_combination c * hb⟩⟩
+    have e : (fun x => P.w (x) * (c * X (x)) ^ 2) = fun x => c ^ 2 * (P.w (x) * X (x) ^ 2) := by
+      funext x
+      ring
+    rw [e, intervalIntegral.integral_const_mul, hc2]
+  choose Z Z' hZ using hdata
+  -- orthogonality
+  have horth : ∀ μ ∈ S, ∀ ν ∈ S, μ ≠ ν →
+      ∫ x in (P.a)..(P.b), P.w (x) * (Z (μ) (x) * Z (ν) (x)) = 0 := by
+    intro μ hμ ν hν hne
+    obtain ⟨hHμ, -, haμ, hbμ⟩ := hZ (μ) (hμ)
+    obtain ⟨hHν, -, haν, hbν⟩ := hZ (ν) (hν)
+    exact orthogonal (hHμ) (hHν) (hne) (wronskian_eq_zero (P.assumptions.Ba_ne) (haμ) (haν))
+      (wronskian_eq_zero (P.assumptions.Bb_ne) (hbμ) (hbν))
+  -- uniform bounds
+  obtain ⟨pm, pM, hpm, hp⟩ := exists_pos_bounds (hab.le)
+    (P.assumptions.p_contDiffOn.continuousOn) (P.assumptions.p_pos)
+  obtain ⟨wm, wM, -, hw⟩ := exists_pos_bounds (hab.le) (P.assumptions.w_continuousOn)
+    (P.assumptions.w_pos)
+  set W := ∫ x in (P.a)..(P.b), P.w (x)
+  have hW : 0 < W := integral_pos_of_ne_zero (hab) (P.assumptions.w_continuousOn)
+    (fun x hx => (P.assumptions.w_pos (x) (hx)).le) (left_mem_Icc.2 (hab.le))
+    ((P.assumptions.w_pos (P.a) (left_mem_Icc.2 (hab.le))).ne')
+  set C := max (M / pm) (0)
+  have henergy : ∀ μ ∈ S, ∫ x in (P.a)..(P.b), Z' (μ) (x) ^ 2 ≤ C := by
+    intro μ hμ
+    obtain ⟨hH, hn, ha, hb⟩ := hZ (μ) (hμ)
+    have hR := rayleigh (hH) (Or.inl (ha)) (Or.inl (hb))
+    rw [hn, mul_one] at hR
+    have hμM : μ ≤ M := hμ.2
+    have hle : ∫ x in (P.a)..(P.b), Z' (μ) (x) ^ 2 ≤
+        ∫ x in (P.a)..(P.b), P.L.p (x) * Z' (μ) (x) ^ 2 / pm := by
+      refine intervalIntegral.integral_mono_on (hab.le)
+        (intervalIntegrable_of_continuousOn (hab.le) (hH.2.1.pow (2)))
+        (intervalIntegrable_of_continuousOn (hab.le)
+          (((P.assumptions.p_contDiffOn.continuousOn).mul (hH.2.1.pow (2))).div_const (_)))
+        (fun x hx => ?_)
+      rw [le_div_iff₀ (hpm)]
+      nlinarith [(hp (x) (hx)).1, sq_nonneg (Z' (μ) (x))]
+    rw [intervalIntegral.integral_div] at hle
+    calc _ ≤ _ := hle
+      _ ≤ M / pm := div_le_div_of_nonneg_right (hR.trans (hμM)) (hpm.le)
+      _ ≤ C := le_max_left (_) (_)
+  have hC0 : 0 ≤ C := le_max_right (_) (_)
+  -- a uniform bound on the values
+  have hval : ∀ μ ∈ S, ∀ x ∈ Icc (P.a) (P.b),
+      |Z (μ) (x)| ≤ 1 + 2 / W + (P.b - P.a) / 2 + C / 2 := by
+    intro μ hμ x hx
+    obtain ⟨hH, hn, -, -⟩ := hZ (μ) (hμ)
+    obtain ⟨x₀, hx₀, hsmall⟩ : ∃ x₀ ∈ Icc (P.a) (P.b), Z (μ) (x₀) ^ 2 ≤ 2 / W := by
+      by_contra hcon
+      push Not at hcon
+      have : ∫ x in (P.a)..(P.b), P.w (x) * (2 / W) ≤
+          ∫ x in (P.a)..(P.b), P.w (x) * Z (μ) (x) ^ 2 :=
+        intervalIntegral.integral_mono_on (hab.le)
+          (intervalIntegrable_of_continuousOn (hab.le)
+            ((P.assumptions.w_continuousOn).mul (continuousOn_const)))
+          (intervalIntegrable_of_continuousOn (hab.le)
+            ((P.assumptions.w_continuousOn).mul (hH.continuousOn.pow (2))))
+          (fun x hx => mul_le_mul_of_nonneg_left ((hcon (x) (hx)).le)
+            ((P.assumptions.w_pos (x) (hx)).le))
+      rw [intervalIntegral.integral_mul_const, hn] at this
+      have : W * (2 / W) = 2 := by field_simp
+      linarith
+    have h1 := abs_sub_le_of_integral_sq (hab) (hH.1) (hH.2.1) (henergy (μ) (hμ)) (one_pos)
+      (x) (hx) (x₀) (hx₀)
+    have h2 : |x - x₀| ≤ P.b - P.a := by
+      rw [abs_le]
+      constructor <;> linarith [hx.1, hx.2, hx₀.1, hx₀.2]
+    have h3 : |Z (μ) (x₀)| ≤ 1 + 2 / W := by
+      have : |Z (μ) (x₀)| ≤ 1 + Z (μ) (x₀) ^ 2 := by
+        nlinarith [sq_abs (Z (μ) (x₀)), sq_nonneg (|Z (μ) (x₀)| - 1)]
+      linarith
+    calc |Z (μ) (x)| = |(Z (μ) (x) - Z (μ) (x₀)) + Z (μ) (x₀)| := by ring_nf
+      _ ≤ |Z (μ) (x) - Z (μ) (x₀)| + |Z (μ) (x₀)| := abs_add_le (_) (_)
+      _ ≤ _ := by
+        have : 1 * |x - x₀| / 2 ≤ (P.b - P.a) / 2 := by linarith
+        linarith
+  set B := 1 + 2 / W + (P.b - P.a) / 2 + C / 2
+  -- the eigenfunctions as bounded continuous functions on `[a, b]`
+  have : Infinite (S) := hS.to_subtype
+  let e : ℕ ↪ S := Infinite.natEmbedding (S)
+  have hcont : ∀ n, ContinuousOn (Z (e (n))) (Icc (P.a) (P.b)) :=
+    fun n => (hZ (e (n)) ((e (n)).2)).1.continuousOn
+  let f : ℕ → BoundedContinuousFunction (Icc (P.a) (P.b)) (ℝ) := fun n =>
+    BoundedContinuousFunction.mkOfCompact ⟨(Icc (P.a) (P.b)).domRestrict (Z (e (n))),
+      (hcont (n)).domRestrict⟩
+  have hf : ∀ n (x : Icc (P.a) (P.b)), f (n) (x) = Z (e (n)) (x) := fun n x => rfl
+  have hcpt : IsCompact (closure (range (f))) := by
+    refine BoundedContinuousFunction.arzela_ascoli (Icc (-B) (B)) (isCompact_Icc) (range (f))
+      (?_) (?_)
+    · rintro _ x ⟨n, rfl⟩
+      rw [hf]
+      exact abs_le.1 (hval (e (n)) ((e (n)).2) (x) (x.2))
+    · refine UniformEquicontinuous.equicontinuous (Metric.uniformEquicontinuous_iff.2 (?_))
+      intro ε hε
+      set t := C / ε + 1
+      have ht : 0 < t := by positivity
+      refine ⟨ε / t, by positivity, fun x y hxy g => ?_⟩
+      obtain ⟨_, ⟨n, rfl⟩⟩ := g
+      simp only [Real.dist_eq, hf]
+      have := abs_sub_le_of_integral_sq (hab) ((hZ (e (n)) ((e (n)).2)).1.1)
+        ((hZ (e (n)) ((e (n)).2)).1.2.1) (henergy (e (n)) ((e (n)).2)) (ht) (x) (x.2) (y)
+        (y.2)
+      have hxy' : |(x : ℝ) - y| < ε / t := by
+        rw [← Real.dist_eq]
+        exact hxy
+      have h1 : t * |(x : ℝ) - y| / 2 < ε / 2 := by
+        have := mul_lt_mul_of_pos_left (hxy') (ht)
+        rw [mul_div_cancel₀ (_) (ht.ne')] at this
+        linarith
+      have h2 : C / (2 * t) < ε / 2 := by
+        rw [div_lt_div_iff₀ (by positivity) (two_pos)]
+        have : C < ε * t := by
+          simp only [t]
+          rw [mul_add, mul_div_cancel₀ (_) (hε.ne'), mul_one]
+          linarith
+        nlinarith
+      linarith
+  obtain ⟨g, -, φ, hφ, hlim⟩ := hcpt.tendsto_subseq (fun n => subset_closure ⟨n, rfl⟩)
+  set δ := min (1) (1 / W)
+  have hδ : 0 < δ := lt_min (one_pos) (by positivity)
+  obtain ⟨N, hN⟩ := Metric.cauchySeq_iff'.1 (hlim.cauchySeq) (δ) (hδ)
+  have hdist := hN (N + 1) (Nat.le_succ (N))
+  set μ := (e (φ (N + 1)) : ℝ)
+  set ν := (e (φ (N)) : ℝ)
+  have hμν : μ ≠ ν := fun h =>
+    (hφ (Nat.lt_succ_self (N))).ne' (e.injective (Subtype.val_injective (h)))
+  have hμS : μ ∈ S := (e (φ (N + 1))).2
+  have hνS : ν ∈ S := (e (φ (N))).2
+  have hclose : ∀ x ∈ Icc (P.a) (P.b), |Z (μ) (x) - Z (ν) (x)| ≤ δ := fun x hx => by
+    have := BoundedContinuousFunction.dist_coe_le_dist (f := f (φ (N + 1))) (g := f (φ (N)))
+      ⟨x, hx⟩
+    rw [hf, hf, Real.dist_eq] at this
+    exact this.trans (hdist.le)
+  obtain ⟨hHμ, hnμ, -, -⟩ := hZ (μ) (hμS)
+  obtain ⟨hHν, hnν, -, -⟩ := hZ (ν) (hνS)
+  have hw' := P.assumptions.w_continuousOn
+  have i1 : IntervalIntegrable (fun x => P.w (x) * Z (μ) (x) ^ 2) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab.le) (hw'.mul (hHμ.continuousOn.pow (2)))
+  have i2 : IntervalIntegrable (fun x => P.w (x) * Z (ν) (x) ^ 2) (volume) (P.a) (P.b) :=
+    intervalIntegrable_of_continuousOn (hab.le) (hw'.mul (hHν.continuousOn.pow (2)))
+  have i3 : IntervalIntegrable (fun x => 2 * (P.w (x) * (Z (μ) (x) * Z (ν) (x)))) (volume) (P.a)
+      (P.b) :=
+    intervalIntegrable_of_continuousOn (hab.le)
+      (continuousOn_const.mul (hw'.mul (hHμ.continuousOn.mul (hHν.continuousOn))))
+  have htwo : ∫ x in (P.a)..(P.b), P.w (x) * (Z (μ) (x) - Z (ν) (x)) ^ 2 = 2 := by
+    have e : (fun x => P.w (x) * (Z (μ) (x) - Z (ν) (x)) ^ 2) = fun x =>
+        P.w (x) * Z (μ) (x) ^ 2 + P.w (x) * Z (ν) (x) ^ 2 -
+          2 * (P.w (x) * (Z (μ) (x) * Z (ν) (x))) := by
+      funext x
+      ring
+    rw [e, intervalIntegral.integral_sub ((i1.add (i2))) (i3),
+      intervalIntegral.integral_add (i1) (i2),
+      intervalIntegral.integral_const_mul, hnμ, hnν, horth (μ) (hμS) (ν) (hνS) (hμν)]
+    ring
+  have hsmall : ∫ x in (P.a)..(P.b), P.w (x) * (Z (μ) (x) - Z (ν) (x)) ^ 2 ≤
+      ∫ x in (P.a)..(P.b), P.w (x) * δ ^ 2 :=
+    intervalIntegral.integral_mono_on (hab.le)
+      (intervalIntegrable_of_continuousOn (hab.le)
+        (hw'.mul ((hHμ.continuousOn.sub (hHν.continuousOn)).pow (2))))
+      (intervalIntegrable_of_continuousOn (hab.le) (hw'.mul (continuousOn_const)))
+      (fun x hx => mul_le_mul_of_nonneg_left (by
+          rw [← sq_abs]
+          exact pow_le_pow_left₀ (abs_nonneg (_)) (hclose (x) (hx)) (2))
+        ((P.assumptions.w_pos (x) (hx)).le))
+  rw [htwo, intervalIntegral.integral_mul_const] at hsmall
+  have h1 : δ ≤ 1 := min_le_left (_) (_)
+  have h2 : δ * W ≤ 1 := by
+    have := mul_le_mul_of_nonneg_right (min_le_right (1) (1 / W)) (hW.le)
+    rwa [one_div_mul_cancel (hW.ne')] at this
+  have : W * δ ^ 2 ≤ 1 := by nlinarith
+  linarith
+
+/-! ### Infinitely many eigenvalues: a scaled Prüfer transformation -/
+
+/-- The extension of a function on `[a, b]` to `ℝ` that is constant outside `[a, b]`. -/
+private noncomputable def extIcc (P : Problem) (f : ℝ → ℝ) : ℝ → ℝ :=
+  fun x => f (projIcc (P.a) (P.b) (P.a_lt_b.le) (x))
+
+private lemma extIcc_eq {P : Problem} {f : ℝ → ℝ} {x : ℝ} (hx : x ∈ Icc (P.a) (P.b)) :
+    extIcc (P) (f) (x) = f (x) := by
+  simp [extIcc, projIcc_of_mem (_) (hx)]
+
+private lemma continuous_extIcc {P : Problem} {f : ℝ → ℝ}
+    (hf : ContinuousOn (f) (Icc (P.a) (P.b))) :
+    Continuous (extIcc (P) (f)) :=
+  hf.comp_continuous (continuous_subtype_val.comp (continuous_projIcc))
+    (fun x => (projIcc (P.a) (P.b) (P.a_lt_b.le) (x)).2)
+
+/-- Bounds on the coefficients of `P`, extended to `ℝ`. -/
+private lemma coeff_bounds (P : Problem) :
+    ∃ pm pM wm wM Q : ℝ, 0 < pm ∧ 0 < wm ∧ 0 ≤ Q ∧ ∀ x, pm ≤ extIcc (P) (P.L.p) (x) ∧
+      extIcc (P) (P.L.p) (x) ≤ pM ∧ wm ≤ extIcc (P) (P.w) (x) ∧ extIcc (P) (P.w) (x) ≤ wM ∧
+      |extIcc (P) (P.L.q) (x)| ≤ Q := by
+  have hab := P.a_lt_b.le
+  obtain ⟨pm, pM, hpm, hp⟩ := exists_pos_bounds (hab) (P.assumptions.p_contDiffOn.continuousOn)
+    (P.assumptions.p_pos)
+  obtain ⟨wm, wM, hwm, hw⟩ := exists_pos_bounds (hab) (P.assumptions.w_continuousOn)
+    (P.assumptions.w_pos)
+  obtain ⟨x₂, -, hmax⟩ := isCompact_Icc.exists_isMaxOn (nonempty_Icc.2 (hab))
+    (P.assumptions.q_continuousOn.abs)
+  refine ⟨pm, pM, wm, wM, |P.L.q (x₂)|, hpm, hwm, abs_nonneg (_), fun x => ?_⟩
+  have hy := (projIcc (P.a) (P.b) (hab) (x)).2
+  exact ⟨(hp (_) (hy)).1, (hp (_) (hy)).2, (hw (_) (hy)).1, (hw (_) (hy)).2, hmax (hy)⟩
+
+/-- The right-hand side of the scaled Prüfer equation
+`θ' = k cos² θ / p + (q / k + k w) sin² θ`. -/
+private noncomputable def prF (P : Problem) (k x θ : ℝ) : ℝ :=
+  k * Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (x) +
+    (extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x)) * Real.sin (θ) ^ 2
+
+private lemma continuous_prF (P : Problem) (k θ : ℝ) :
+    Continuous (fun x => prF (P) (k) (x) (θ)) := by
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  have hp := continuous_extIcc (P := P) (P.assumptions.p_contDiffOn.continuousOn)
+  have hq := continuous_extIcc (P := P) (P.assumptions.q_continuousOn)
+  have hw := continuous_extIcc (P := P) (P.assumptions.w_continuousOn)
+  exact (continuous_const.div (hp) (fun x => ((hpm.trans_le ((hb (x)).1))).ne')).add
+    (((hq.div_const (_)).add (continuous_const.mul (hw))).mul (continuous_const))
+
+private lemma prF_lipschitz (P : Problem) {k : ℝ} (hk : 0 < k) :
+    ∃ K : NNReal, ∀ x, LipschitzWith (K) (prF (P) (k) (x)) := by
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  set Bm := Q / k + k * wM + k / pm
+  have hwM : 0 ≤ wM := (hwm.le.trans ((hb (0)).2.2.1)).trans ((hb (0)).2.2.2.1)
+  have hBm : 0 ≤ Bm := by positivity
+  refine ⟨(2 * Bm).toNNReal, fun x => LipschitzWith.of_dist_le_mul (fun θ φ => ?_)⟩
+  rw [Real.coe_toNNReal (_) (by positivity), Real.dist_eq, Real.dist_eq]
+  obtain ⟨h1, -, h3, h4, h5⟩ := hb (x)
+  set B := extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x) - k / extIcc (P) (P.L.p) (x)
+  have hp0 : 0 < extIcc (P) (P.L.p) (x) := hpm.trans_le (h1)
+  have hB : |B| ≤ Bm := by
+    have e1 : |extIcc (P) (P.L.q) (x) / k| ≤ Q / k := by
+      rw [abs_div, abs_of_pos (hk)]
+      exact div_le_div_of_nonneg_right (h5) (hk.le)
+    have e2 : |k * extIcc (P) (P.w) (x)| ≤ k * wM := by
+      rw [abs_mul, abs_of_pos (hk), abs_of_pos (hwm.trans_le (h3))]
+      exact mul_le_mul_of_nonneg_left (h4) (hk.le)
+    have e3 : |k / extIcc (P) (P.L.p) (x)| ≤ k / pm := by
+      rw [abs_div, abs_of_pos (hk), abs_of_pos (hp0)]
+      exact div_le_div_of_nonneg_left (hk.le) (hpm) (h1)
+    calc |B| ≤ |extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x)| +
+          |k / extIcc (P) (P.L.p) (x)| :=
+          abs_sub (_) (_)
+      _ ≤ |extIcc (P) (P.L.q) (x) / k| + |k * extIcc (P) (P.w) (x)| +
+          |k / extIcc (P) (P.L.p) (x)| := by
+          gcongr
+          exact abs_add_le (_) (_)
+      _ ≤ Bm := by linarith
+  have hdiff : prF (P) (k) (x) (θ) - prF (P) (k) (x) (φ) =
+      B * (Real.sin (θ) ^ 2 - Real.sin (φ) ^ 2) := by
+    simp only [prF, B, Real.cos_sq']
+    ring
+  have hsin : |Real.sin (θ) ^ 2 - Real.sin (φ) ^ 2| ≤ 2 * |θ - φ| := by
+    have : Real.sin (θ) ^ 2 - Real.sin (φ) ^ 2 =
+        (Real.sin (θ) - Real.sin (φ)) * (Real.sin (θ) + Real.sin (φ)) := by ring
+    rw [this, abs_mul]
+    have h1 := Real.abs_sin_sub_sin_le (θ) (φ)
+    have h2 : |Real.sin (θ) + Real.sin (φ)| ≤ 2 := by
+      have := abs_add_le (Real.sin (θ)) (Real.sin (φ))
+      linarith [Real.abs_sin_le_one (θ), Real.abs_sin_le_one (φ)]
+    calc _ ≤ |θ - φ| * 2 := mul_le_mul (h1) (h2) (abs_nonneg (_)) (abs_nonneg (_))
+      _ = _ := by ring
+  rw [hdiff, abs_mul]
+  calc |B| * |Real.sin (θ) ^ 2 - Real.sin (φ) ^ 2| ≤ Bm * (2 * |θ - φ|) :=
+        mul_le_mul (hB) (hsin) (abs_nonneg (_)) (hBm)
+    _ = 2 * Bm * |θ - φ| := by ring
+
+private lemma prF_abs_le (P : Problem) {k : ℝ} (hk : 0 < k) :
+    ∃ L : ℝ, 0 ≤ L ∧ ∀ x θ, |prF (P) (k) (x) (θ)| ≤ L := by
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  have hwM : 0 ≤ wM := (hwm.le.trans ((hb (0)).2.2.1)).trans ((hb (0)).2.2.2.1)
+  refine ⟨k / pm + (Q / k + k * wM), by positivity, fun x θ => ?_⟩
+  obtain ⟨h1, -, h3, h4, h5⟩ := hb (x)
+  have hp0 : 0 < extIcc (P) (P.L.p) (x) := hpm.trans_le (h1)
+  have hc := Real.cos_sq_le_one (θ)
+  have hs := Real.sin_sq_le_one (θ)
+  have hc0 := sq_nonneg (Real.cos (θ))
+  have hs0 := sq_nonneg (Real.sin (θ))
+  have t1 : |k * Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (x)| ≤ k / pm := by
+    rw [abs_of_nonneg (by positivity), div_le_div_iff₀ (hp0) (hpm)]
+    have e1 := mul_le_mul_of_nonneg_left (hc) (mul_nonneg (hk.le) (hpm.le))
+    have e2 := mul_le_mul_of_nonneg_left (h1) (hk.le)
+    nlinarith
+  have t2 : |(extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x)) * Real.sin (θ) ^ 2| ≤
+      Q / k + k * wM := by
+    rw [abs_mul, abs_of_nonneg (hs0)]
+    have : |extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x)| ≤ Q / k + k * wM := by
+      refine (abs_add_le (_) (_)).trans (add_le_add (?_) (?_))
+      · rw [abs_div, abs_of_pos (hk)]
+        exact div_le_div_of_nonneg_right (h5) (hk.le)
+      · rw [abs_mul, abs_of_pos (hk), abs_of_pos (hwm.trans_le (h3))]
+        exact mul_le_mul_of_nonneg_left (h4) (hk.le)
+    calc _ ≤ (Q / k + k * wM) * 1 :=
+          mul_le_mul (this) (hs) (hs0) (by positivity)
+      _ = _ := mul_one (_)
+  exact (abs_add_le (_) (_)).trans (add_le_add (t1) (t2))
+
+/-- Existence of the scaled Prüfer angle: `θ(a) = θ₀` and `θ' = prF k x θ` on `[a, b]`. -/
+private lemma prufer_exists (P : Problem) {k : ℝ} (hk : 0 < k) (θ₀ : ℝ) :
+    ∃ θ : ℝ → ℝ, θ (P.a) = θ₀ ∧ ∀ x ∈ Icc (P.a) (P.b),
+      HasDerivWithinAt (θ) (prF (P) (k) (x) (θ (x))) (Icc (P.a) (P.b)) (x) := by
+  obtain ⟨K, hK⟩ := prF_lipschitz (P) (hk)
+  obtain ⟨L, hL0, hL⟩ := prF_abs_le (P) (hk)
+  have hab := P.a_lt_b
+  let t₀ : Icc (P.a) (P.b) := ⟨P.a, left_mem_Icc.2 (hab.le)⟩
+  have hPL : IsPicardLindelof (fun t θ => prF (P) (k) (t) (θ)) (t₀) (θ₀)
+      (L.toNNReal * (P.b - P.a).toNNReal) (0) (L.toNNReal) (K) :=
+    { lipschitzOnWith := fun t _ => (hK (t)).lipschitzOnWith
+      continuousOn := fun θ _ => (continuous_prF (P) (k) (θ)).continuousOn
+      norm_le := fun t _ θ _ => by
+        rw [Real.norm_eq_abs, Real.coe_toNNReal (_) (hL0)]
+        exact hL (t) (θ)
+      mul_max_le := by
+        simp only [t₀, sub_self, NNReal.coe_mul, Real.coe_toNNReal (_) (hL0),
+          Real.coe_toNNReal (_) (sub_nonneg.2 (hab.le)), NNReal.coe_zero, sub_zero]
+        rw [max_eq_left (sub_nonneg.2 (hab.le))] }
+  obtain ⟨θ, hθ0, hθ⟩ := hPL.exists_eq_forall_mem_Icc_hasDerivWithinAt₀
+  exact ⟨θ, hθ0, hθ⟩
+
+/-- For large `k`, the right-hand side of the Prüfer equation is at least `c k`. -/
+private lemma prF_lower (P : Problem) :
+    ∃ k₀ > 0, ∃ c > 0, ∀ k ≥ k₀, ∀ x θ, k * c ≤ prF (P) (k) (x) (θ) := by
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  have hpM : 0 < pM := hpm.trans_le (((hb (0)).1).trans ((hb (0)).2.1))
+  refine ⟨1 + 2 * Q / wm, by positivity, min (1 / pM) (wm / 2), lt_min (by positivity)
+    (by positivity), fun k hk x θ => ?_⟩
+  have hk0 : 0 < k := lt_of_lt_of_le (by positivity) (hk)
+  have hk1 : 1 ≤ k := le_trans (le_add_of_nonneg_right (by positivity)) (hk)
+  obtain ⟨h1, h2, h3, -, h5⟩ := hb (x)
+  have hp0 : 0 < extIcc (P) (P.L.p) (x) := hpm.trans_le (h1)
+  set c := min (1 / pM) (wm / 2)
+  have hc1 : c ≤ 1 / extIcc (P) (P.L.p) (x) :=
+    (min_le_left (_) (_)).trans (one_div_le_one_div_of_le (hp0) (h2))
+  have hc2 : c ≤ wm / 2 := min_le_right (_) (_)
+  -- `Q / k ≤ k wm / 2`
+  have hQk : Q / k ≤ k * wm / 2 := by
+    rw [div_le_iff₀ (hk0)]
+    have : 2 * Q / wm ≤ k := by linarith
+    rw [div_le_iff₀ (hwm)] at this
+    nlinarith
+  have hq : -(Q / k) ≤ extIcc (P) (P.L.q) (x) / k := by
+    rw [neg_div', div_le_div_iff_of_pos_right (hk0)]
+    linarith [(abs_le.1 (h5)).1]
+  have hr : k * c ≤ extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x) := by
+    have : k * c ≤ k * (wm / 2) := mul_le_mul_of_nonneg_left (hc2) (hk0.le)
+    nlinarith
+  have hcos : k * c * Real.cos (θ) ^ 2 ≤ k * Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (x) := by
+    have := mul_le_mul_of_nonneg_left (hc1) (mul_nonneg (hk0.le) (sq_nonneg (Real.cos (θ))))
+    calc k * c * Real.cos (θ) ^ 2 = k * Real.cos (θ) ^ 2 * c := by ring
+      _ ≤ k * Real.cos (θ) ^ 2 * (1 / extIcc (P) (P.L.p) (x)) := this
+      _ = _ := by ring
+  have hsin : k * c * Real.sin (θ) ^ 2 ≤
+      (extIcc (P) (P.L.q) (x) / k + k * extIcc (P) (P.w) (x)) * Real.sin (θ) ^ 2 :=
+    mul_le_mul_of_nonneg_right (hr) (sq_nonneg (_))
+  have hsc := Real.sin_sq_add_cos_sq (θ)
+  have hkc : k * c = k * c * Real.sin (θ) ^ 2 + k * c * Real.cos (θ) ^ 2 := by
+    linear_combination (-(k * c)) * hsc
+  simp only [prF]
+  linarith
+
+/-- The angle `A ∈ [0, π]` with `α p sin A + β k cos A = 0`. If `y = ρ sin θ` and
+`p y' = k ρ cos θ`, then `α y + β y' = 0` exactly when `θ ≡ A (mod π)`. -/
+private noncomputable def bcAngle (α β p k : ℝ) : ℝ :=
+  if β = 0 then 0 else Real.arctan (α * p / (β * k)) + Real.pi / 2
+
+private lemma bcAngle_mem (α β p k : ℝ) : bcAngle (α) (β) (p) (k) ∈ Icc (0) (Real.pi) := by
+  unfold bcAngle
+  split_ifs
+  · exact ⟨le_rfl, Real.pi_pos.le⟩
+  · constructor <;> linarith [Real.neg_pi_div_two_lt_arctan (α * p / (β * k)),
+      Real.arctan_lt_pi_div_two (α * p / (β * k))]
+
+private lemma bcAngle_spec (α β p : ℝ) {k : ℝ} (hk : 0 < k) :
+    α * p * Real.sin (bcAngle (α) (β) (p) (k)) +
+      β * k * Real.cos (bcAngle (α) (β) (p) (k)) = 0 := by
+  unfold bcAngle
+  split_ifs with hβ
+  · simp [hβ]
+  · rw [Real.sin_add_pi_div_two, Real.cos_add_pi_div_two, Real.cos_arctan, Real.sin_arctan]
+    have hbk : β * k ≠ 0 := mul_ne_zero (hβ) (hk.ne')
+    field_simp
+    ring
+
+private lemma continuousOn_bcAngle (α β p : ℝ) :
+    ContinuousOn (fun k => bcAngle (α) (β) (p) (k)) (Ioi (0)) := by
+  by_cases hβ : β = 0
+  · simp only [bcAngle, hβ, ↓reduceIte]
+    exact continuousOn_const
+  · simp only [bcAngle, hβ, ↓reduceIte]
+    exact (Real.continuous_arctan.comp_continuousOn (continuousOn_const.div
+      (continuousOn_const.mul (continuousOn_id)) (fun k hk => mul_ne_zero (hβ)
+        (ne_of_gt (hk))))).add (continuousOn_const)
+
+/-- At an angle `θ ≡ A (mod π)`, `y = ρ sin θ` and `y' = k ρ cos θ / p` satisfy the Robin
+condition `α y + β y' = 0`. -/
+private lemma robin_of_bcAngle {α β p k ρ θ : ℝ} (hk : 0 < k) (hp : 0 < p) (m : ℕ)
+    (hθ : θ = bcAngle (α) (β) (p) (k) + m * Real.pi) :
+    α * (ρ * Real.sin (θ)) + β * (k * ρ * Real.cos (θ) / p) = 0 := by
+  subst hθ
+  rw [Real.sin_add_nat_mul_pi, Real.cos_add_nat_mul_pi]
+  have h := bcAngle_spec (α) (β) (p) (hk)
+  have hp' : p * p⁻¹ = 1 := mul_inv_cancel₀ (hp.ne')
+  linear_combination (ρ * (-1) ^ m / p) * h +
+    (-(α * ρ * (-1) ^ m * Real.sin (bcAngle (α) (β) (p) (k)))) * hp'
+
+/-- The scaled Prüfer angle for `k > 0` (and `0` otherwise), starting at the angle of the
+boundary condition at `a`. -/
+private noncomputable def pruferAngle (P : Problem) (k : ℝ) : ℝ → ℝ :=
+  if hk : 0 < k then
+    Classical.choose (prufer_exists (P) (hk) (bcAngle (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (k)))
+  else 0
+
+private lemma pruferAngle_spec (P : Problem) {k : ℝ} (hk : 0 < k) :
+    pruferAngle (P) (k) (P.a) = bcAngle (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (k) ∧
+      ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (pruferAngle (P) (k))
+        (prF (P) (k) (x) (pruferAngle (P) (k) (x))) (Icc (P.a) (P.b)) (x) := by
+  simp only [pruferAngle, hk, ↓reduceDIte]
+  exact Classical.choose_spec (prufer_exists (P) (hk) (_))
+
+/-- The Grönwall bound depends continuously on the initial error and the error of the equation. -/
+private lemma continuous_gronwallBound (K x : ℝ) :
+    Continuous (fun e : ℝ × ℝ => gronwallBound (e.1) (K) (e.2) (x)) := by
+  by_cases hK : K = 0
+  · subst hK
+    simp only [gronwallBound_K0]
+    fun_prop
+  · simp only [gronwallBound_of_K_ne_0 (hK)]
+    fun_prop
+
+/-- The derivative within `[a, b]`, at a point of `[a, b)`, gives the right derivative. -/
+private lemma hasDerivWithinAt_Ici {a b : ℝ} {f : ℝ → ℝ} {f' t : ℝ}
+    (h : HasDerivWithinAt (f) (f') (Icc (a) (b)) (t)) (ht : t ∈ Ico (a) (b)) :
+    HasDerivWithinAt (f) (f') (Ici (t)) (t) :=
+  h.mono_of_mem_nhdsWithin (mem_of_superset (Icc_mem_nhdsGE (ht.2))
+    (Icc_subset_Icc_left (ht.1)))
+
+/-- The Prüfer angle at `b` depends continuously on `k > 0`. -/
+private lemma continuousOn_pruferAngle (P : Problem) :
+    ContinuousOn (fun k => pruferAngle (P) (k) (P.b)) (Ioi (0)) := by
+  intro k₀ hk₀
+  have hk₀' : 0 < k₀ := hk₀
+  have hab := P.a_lt_b
+  obtain ⟨K, hK⟩ := prF_lipschitz (P) (hk₀')
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  have hwM : 0 ≤ wM := (hwm.le.trans ((hb (0)).2.2.1)).trans ((hb (0)).2.2.2.1)
+  set e : ℝ → ℝ := fun j => |j - k₀| / pm + Q * |1 / j - 1 / k₀| + wM * |j - k₀|
+  set A : ℝ → ℝ := fun j => bcAngle (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (j)
+  set δ : ℝ → ℝ := fun j => dist (A (j)) (A (k₀))
+  have hbound : ∀ j > 0, dist (pruferAngle (P) (j) (P.b)) (pruferAngle (P) (k₀) (P.b)) ≤
+      gronwallBound (δ (j)) (K) (e (j) + 0) (P.b - P.a) := by
+    intro j hj
+    obtain ⟨hja, hjd⟩ := pruferAngle_spec (P) (hj)
+    obtain ⟨hka, hkd⟩ := pruferAngle_spec (P) (hk₀')
+    refine dist_le_of_approx_trajectories_ODE (v := fun t θ => prF (P) (k₀) (t) (θ)) (hK)
+      (fun x hx => (hjd (x) (hx)).continuousWithinAt)
+      (fun t ht => hasDerivWithinAt_Ici (hjd (t) (Ico_subset_Icc_self (ht))) (ht))
+      (fun t _ => ?_)
+      (fun x hx => (hkd (x) (hx)).continuousWithinAt)
+      (fun t ht => hasDerivWithinAt_Ici (hkd (t) (Ico_subset_Icc_self (ht))) (ht))
+      (fun t _ => by simp) (by rw [hja, hka]) (P.b) (right_mem_Icc.2 (hab.le))
+    -- `|prF j - prF k₀| ≤ e j`
+    set θ := pruferAngle (P) (j) (t)
+    obtain ⟨h1, -, h3, h4, h5⟩ := hb (t)
+    have hp0 : 0 < extIcc (P) (P.L.p) (t) := hpm.trans_le (h1)
+    have hdiff : prF (P) (j) (t) (θ) - prF (P) (k₀) (t) (θ) =
+        (j - k₀) * (Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (t)) +
+          extIcc (P) (P.L.q) (t) * (1 / j - 1 / k₀) * Real.sin (θ) ^ 2 +
+          (j - k₀) * extIcc (P) (P.w) (t) * Real.sin (θ) ^ 2 := by
+      simp only [prF]
+      ring
+    rw [Real.dist_eq, hdiff]
+    have hc : Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (t) ≤ 1 / pm := by
+      rw [div_le_div_iff₀ (hp0) (hpm)]
+      nlinarith [Real.cos_sq_le_one (θ), sq_nonneg (Real.cos (θ))]
+    have hs := Real.sin_sq_le_one (θ)
+    have hs0 := sq_nonneg (Real.sin (θ))
+    have hc0 : 0 ≤ Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (t) := by positivity
+    have hw0 : 0 ≤ extIcc (P) (P.w) (t) := by linarith
+    calc _ ≤ |(j - k₀) * (Real.cos (θ) ^ 2 / extIcc (P) (P.L.p) (t))| +
+          |extIcc (P) (P.L.q) (t) * (1 / j - 1 / k₀) * Real.sin (θ) ^ 2| +
+          |(j - k₀) * extIcc (P) (P.w) (t) * Real.sin (θ) ^ 2| := abs_add_three (_) (_) (_)
+      _ ≤ |j - k₀| * (1 / pm) + Q * |1 / j - 1 / k₀| * 1 + |j - k₀| * wM * 1 := by
+          rw [abs_mul, abs_mul, abs_mul, abs_mul, abs_mul, abs_of_nonneg (hc0),
+            abs_of_nonneg (hs0), abs_of_nonneg (hw0)]
+          gcongr
+      _ = e (j) := by
+          simp only [e]
+          ring
+  -- the bound tends to `0`
+  have he : ContinuousAt (e) (k₀) := by
+    simp only [e]
+    have : ContinuousAt (fun j : ℝ => 1 / j) (k₀) :=
+      continuousAt_const.div (continuousAt_id) (hk₀'.ne')
+    fun_prop
+  have he0 : e (k₀) = 0 := by simp [e]
+  have hlim : Tendsto (fun j => gronwallBound (δ (j)) (K) (e (j) + 0) (P.b - P.a))
+      (𝓝[Ioi (0)] k₀) (𝓝 (0)) := by
+    have h1 : Tendsto (fun j => e (j) + 0) (𝓝[Ioi (0)] k₀) (𝓝 (0)) := by
+      have := he.tendsto
+      rw [he0] at this
+      simpa only [add_zero] using this.mono_left (nhdsWithin_le_nhds)
+    have h2 : Tendsto (δ) (𝓝[Ioi (0)] k₀) (𝓝 (0)) :=
+      tendsto_iff_dist_tendsto_zero.1
+        ((continuousOn_bcAngle (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (k₀) (hk₀)).tendsto)
+    have := ((continuous_gronwallBound (K) (P.b - P.a)).tendsto ((0, 0))).comp
+      (h2.prodMk_nhds (h1))
+    rwa [gronwallBound_ε0_δ0] at this
+  refine tendsto_iff_dist_tendsto_zero.2 (squeeze_zero' (Eventually.of_forall
+    (fun _ => dist_nonneg)) (eventually_nhdsWithin_of_forall (fun j hj => hbound (j) (hj)))
+    (hlim))
+
+/-- A lower bound for the Prüfer angle at `b`: `θ(b) ≥ θ(a) + c k (b - a)`. -/
+private lemma pruferAngle_ge (P : Problem) {k c : ℝ} (hk : 0 < k)
+    (hc : ∀ x θ, k * c ≤ prF (P) (k) (x) (θ)) :
+    pruferAngle (P) (k) (P.a) + k * c * (P.b - P.a) ≤ pruferAngle (P) (k) (P.b) := by
+  have hab := P.a_lt_b
+  obtain ⟨ha, hd⟩ := pruferAngle_spec (P) (hk)
+  have hmono : MonotoneOn (fun x => pruferAngle (P) (k) (x) - k * c * x) (Icc (P.a) (P.b)) := by
+    refine monotoneOn_of_hasDerivWithinAt_nonneg (f' := fun x => prF (P) (k) (x)
+      (pruferAngle (P) (k) (x)) - k * c) (convex_Icc (_) (_))
+      (fun x hx => ((hd (x) (hx)).continuousWithinAt.sub (continuousWithinAt_const.mul
+        (continuousWithinAt_id)))) (fun x hx => ?_) (fun x _ => sub_nonneg.2 (hc (x) (_)))
+    rw [interior_Icc] at hx ⊢
+    have := (hd (x) (Ioo_subset_Icc_self (hx))).mono (Ioo_subset_Icc_self)
+    exact this.sub ((hasDerivWithinAt_id (x) (_)).const_mul (k * c) |>.congr_deriv (by ring))
+  have := hmono (left_mem_Icc.2 (hab.le)) (right_mem_Icc.2 (hab.le)) (hab.le)
+  simp only at this
+  linarith
+
+/-- From a Prüfer angle starting at the angle of the boundary condition at `a` and ending at the
+angle of the boundary condition at `b` plus `m π`, `m ≥ 3`, an eigenfunction `u = ρ sin θ` of `P`
+for `k²`. -/
+private lemma isEigenvalue_of_prufer {P : Problem} {k : ℝ} (hk : 0 < k) {θ : ℝ → ℝ}
+    (hθa : θ (P.a) = bcAngle (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (k))
+    (hθ : ∀ x ∈ Icc (P.a) (P.b),
+      HasDerivWithinAt (θ) (prF (P) (k) (x) (θ (x))) (Icc (P.a) (P.b)) (x))
+    {m : ℕ} (hθb : θ (P.b) = bcAngle (P.Bb.α) (P.Bb.β) (P.L.p (P.b)) (k) + m * Real.pi)
+    (hm : 3 ≤ m) : IsEigenvalue (P) (k ^ 2) := by
+  have hab := P.a_lt_b
+  have hU : UniqueDiffOn (ℝ) (Icc (P.a) (P.b)) := uniqueDiffOn_Icc (hab)
+  have hθc : ContinuousOn (θ) (Icc (P.a) (P.b)) := fun x hx => (hθ (x) (hx)).continuousWithinAt
+  obtain ⟨pm, pM, wm, wM, Q, hpm, hwm, hQ, hb⟩ := coeff_bounds (P)
+  have hp0 : ∀ x, 0 < extIcc (P) (P.L.p) (x) := fun x => hpm.trans_le ((hb (x)).1)
+  have hpc := continuous_extIcc (P := P) (P.assumptions.p_contDiffOn.continuousOn)
+  have hqc := continuous_extIcc (P := P) (P.assumptions.q_continuousOn)
+  have hwc := continuous_extIcc (P := P) (P.assumptions.w_continuousOn)
+  have hθ'c := continuous_extIcc (P := P) (hθc)
+  set θ' := extIcc (P) (θ)
+  set p' := extIcc (P) (P.L.p)
+  set q' := extIcc (P) (P.L.q)
+  set w' := extIcc (P) (P.w)
+  set G : ℝ → ℝ := fun t => (k / p' (t) - (q' (t) / k + k * w' (t))) * Real.sin (θ' (t)) *
+    Real.cos (θ' (t))
+  have hGc : Continuous (G) :=
+    (((continuous_const.div (hpc) (fun x => (hp0 (x)).ne')).sub ((hqc.div_const (_)).add
+      (continuous_const.mul (hwc)))).mul (Real.continuous_sin.comp (hθ'c))).mul
+      (Real.continuous_cos.comp (hθ'c))
+  set ρ : ℝ → ℝ := fun x => Real.exp (∫ t in (P.a)..(x), G (t))
+  have hρ : ∀ x, HasDerivAt (ρ) (G (x) * ρ (x)) (x) := fun x => by
+    have := ((hGc.integral_hasStrictDerivAt (P.a) (x)).hasDerivAt).exp
+    convert this using 1
+    ring
+  have hρc : Continuous (ρ) := continuous_iff_continuousAt.2 (fun x => (hρ (x)).continuousAt)
+  have hρ0 : ∀ x, 0 < ρ (x) := fun x => Real.exp_pos (_)
+  -- the derivative of `θ'` within `[a, b]`
+  have hθ' : ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (θ') (prF (P) (k) (x) (θ (x)))
+      (Icc (P.a) (P.b)) (x) := fun x hx =>
+    (hθ (x) (hx)).congr (fun y hy => extIcc_eq (hy)) (extIcc_eq (hx))
+  set u : ℝ → ℝ := fun x => ρ (x) * Real.sin (θ' (x))
+  set v : ℝ → ℝ := fun x => k * ρ (x) * Real.cos (θ' (x)) / p' (x)
+  set g : ℝ → ℝ := fun x => k * ρ (x) * Real.cos (θ' (x))
+  have hu : ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (u) (v (x)) (Icc (P.a) (P.b)) (x) := by
+    intro x hx
+    have h := ((hρ (x)).hasDerivWithinAt).mul ((hθ' (x) (hx)).sin)
+    convert h using 1
+    have hx' : θ' (x) = θ (x) := extIcc_eq (hx)
+    simp only [v, G, prF, hx']
+    have hsc := Real.sin_sq_add_cos_sq (θ (x))
+    linear_combination (-(k * ρ (x) * Real.cos (θ (x)) / p' (x))) * hsc
+  have hg : ∀ x ∈ Icc (P.a) (P.b), HasDerivWithinAt (g)
+      (-(P.L.q (x) + k ^ 2 * P.w (x)) * u (x)) (Icc (P.a) (P.b)) (x) := by
+    intro x hx
+    have h := (((hρ (x)).hasDerivWithinAt).const_mul (k)).mul ((hθ' (x) (hx)).cos)
+    convert h using 1
+    have hx' : θ' (x) = θ (x) := extIcc_eq (hx)
+    simp only [u, G, prF, hx', ← extIcc_eq (f := P.L.q) (hx), ← extIcc_eq (f := P.w) (hx)]
+    have hsc := Real.sin_sq_add_cos_sq (θ (x))
+    have hkr : k * (q' (x) / k) = q' (x) := mul_div_cancel₀ (_) (hk.ne')
+    linear_combination (ρ (x) * Real.sin (θ (x)) * (Real.sin (θ (x)) ^ 2 + Real.cos (θ (x)) ^ 2)) *
+      hkr + (ρ (x) * Real.sin (θ (x)) * (q' (x) + k ^ 2 * w' (x))) * hsc
+  have hpg : ∀ x ∈ Icc (P.a) (P.b), P.L.p (x) * v (x) = g (x) := fun x hx => by
+    simp only [v, g, ← extIcc_eq (f := P.L.p) (hx)]
+    field_simp [(hp0 (x)).ne']
+    ring
+  have hamem := left_mem_Icc.2 (hab.le)
+  have hbmem := right_mem_Icc.2 (hab.le)
+  -- `u` and its derivative at a point of `[a, b]`
+  have hux : ∀ x ∈ Icc (P.a) (P.b), u (x) = ρ (x) * Real.sin (θ (x)) := fun x hx => by
+    simp only [u, θ', extIcc_eq (f := θ) (hx)]
+  have hvx : ∀ x ∈ Icc (P.a) (P.b),
+      derivWithin (u) (Icc (P.a) (P.b)) (x) = k * ρ (x) * Real.cos (θ (x)) / P.L.p (x) :=
+    fun x hx => by
+      rw [(hu (x) (hx)).derivWithin (hU (x) (hx))]
+      simp only [v, θ', p', extIcc_eq (f := θ) (hx), extIcc_eq (f := P.L.p) (hx)]
+  refine ⟨u, ⟨?_, ?_, ?_, ?_⟩, ?_⟩
+  · -- `X` is `C²` on `[a, b]`
+    have hρ1 : ContDiffOn (ℝ) (1) (ρ) (Icc (P.a) (P.b)) := by
+      have : ContDiff (ℝ) (1) (ρ) := by
+        rw [contDiff_one_iff_deriv]
+        refine ⟨fun x => (hρ (x)).differentiableAt, ?_⟩
+        have : deriv (ρ) = fun x => G (x) * ρ (x) := funext (fun x => (hρ (x)).deriv)
+        rw [this]
+        exact hGc.mul (hρc)
+      exact this.contDiffOn
+    have hθ'1 : ContDiffOn (ℝ) (1) (θ') (Icc (P.a) (P.b)) := by
+      have hcont : ContinuousOn (fun x => prF (P) (k) (x) (θ (x))) (Icc (P.a) (P.b)) := by
+        have : ContinuousOn (fun x => prF (P) (k) (x) (θ' (x))) (Icc (P.a) (P.b)) := by
+          simp only [prF]
+          exact (((continuous_const.mul ((Real.continuous_cos.comp (hθ'c)).pow (2))).div (hpc)
+            (fun x => (hp0 (x)).ne')).add (((hqc.div_const (_)).add (continuous_const.mul
+            (hwc))).mul ((Real.continuous_sin.comp (hθ'c)).pow (2)))).continuousOn
+        exact this.congr (fun x hx => by simp only [extIcc_eq (f := θ) (hx), θ'])
+      have := (contDiffOn_succ_iff_derivWithin (n := 0) (hU)).2 ⟨fun x hx =>
+        (hθ' (x) (hx)).differentiableWithinAt, by simp, contDiffOn_zero.2 (hcont.congr
+          (fun x hx => (hθ' (x) (hx)).derivWithin (hU (x) (hx))))⟩
+      simpa using this
+    have hp'1 : ContDiffOn (ℝ) (1) (p') (Icc (P.a) (P.b)) :=
+      P.assumptions.p_contDiffOn.congr (fun x hx => extIcc_eq (hx))
+    have hv1 : ContDiffOn (ℝ) (1) (v) (Icc (P.a) (P.b)) :=
+      ((contDiffOn_const.mul (hρ1)).mul (hθ'1.cos)).div (hp'1) (fun x _ => (hp0 (x)).ne')
+    have hu2 : ContDiffOn (ℝ) (2) (u) (Icc (P.a) (P.b)) := by
+      have := (contDiffOn_succ_iff_derivWithin (n := 1) (hU)).2 ⟨fun x hx =>
+        (hu (x) (hx)).differentiableWithinAt, by simp, hv1.congr
+          (fun x hx => (hu (x) (hx)).derivWithin (hU (x) (hx)))⟩
+      exact this
+    exact hu2
+  · -- the equation
+    intro x hx
+    simp only [Operator.applyWithin]
+    have heq : EqOn (fun y => P.L.p (y) * derivWithin (u) (Icc (P.a) (P.b)) (y)) (g)
+        (Icc (P.a) (P.b)) := fun y hy => by
+      simp only
+      rw [(hu (y) (hy)).derivWithin (hU (y) (hy)), hpg (y) (hy)]
+    rw [derivWithin_congr (heq) (heq (hx)), (hg (x) (hx)).derivWithin (hU (x) (hx))]
+    ring
+  · simp only [BoundaryConditions.Robin.Operator.SatisfiesWithin,
+      BoundaryConditions.Robin.Operator.applyWithin, P.assumptions.Ba_c, Pi.zero_apply]
+    rw [hux (P.a) (hamem), hvx (P.a) (hamem)]
+    exact robin_of_bcAngle (hk) (P.assumptions.p_pos (P.a) (hamem)) (0) (by simp [hθa])
+  · simp only [BoundaryConditions.Robin.Operator.SatisfiesWithin,
+      BoundaryConditions.Robin.Operator.applyWithin, P.assumptions.Bb_c, Pi.zero_apply]
+    rw [hux (P.b) (hbmem), hvx (P.b) (hbmem)]
+    exact robin_of_bcAngle (hk) (P.assumptions.p_pos (P.b) (hbmem)) (m) (hθb)
+  · -- `u ≠ 0` where `θ = π / 2 + 2 π`
+    have hmem : Real.pi / 2 + 2 * Real.pi ∈ Icc (θ (P.a)) (θ (P.b)) := by
+      have hA := bcAngle_mem (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (k)
+      have hB := bcAngle_mem (P.Bb.α) (P.Bb.β) (P.L.p (P.b)) (k)
+      have : (3 : ℝ) ≤ m := by exact_mod_cast hm
+      rw [hθa, hθb]
+      constructor <;> nlinarith [Real.pi_pos, hA.2, hB.1]
+    obtain ⟨x, hx, hθx⟩ := intermediate_value_Icc (hab.le) (hθc) (hmem)
+    refine ⟨x, hx, ?_⟩
+    rw [hux (x) (hx), hθx, Real.sin_add_two_pi, Real.sin_pi_div_two, mul_one]
+    exact (hρ0 (x)).ne'
+
+/-- `P` has infinitely many eigenvalues. -/
+private lemma eigenvalueSet_infinite (P : Problem) : (eigenvalueSet (P)).Infinite := by
+  have hab := P.a_lt_b
+  obtain ⟨k₀, hk₀, c, hc, hlow⟩ := prF_lower (P)
+  set B : ℝ → ℝ := fun k => bcAngle (P.Bb.α) (P.Bb.β) (P.L.p (P.b)) (k)
+  set H := fun k => pruferAngle (P) (k) (P.b) - B (k)
+  have hH : ContinuousOn (H) (Ioi (0)) :=
+    (continuousOn_pruferAngle (P)).sub (continuousOn_bcAngle (_) (_) (_))
+  set N₀ := ⌈H (k₀) / Real.pi⌉₊ + 3
+  have hcb : 0 < c * (P.b - P.a) := mul_pos (hc) (sub_pos.2 (hab))
+  -- for each `n`, a `k ≥ k₀` with `θ_k(b) = B_k + (N₀ + n) π`
+  have hex : ∀ n : ℕ, ∃ k ∈ Icc (k₀) (max (k₀) (((N₀ + n) * Real.pi + Real.pi) /
+      (c * (P.b - P.a)))), H (k) = (N₀ + n : ℕ) * Real.pi := by
+    intro n
+    set K := max (k₀) (((N₀ + n) * Real.pi + Real.pi) / (c * (P.b - P.a)))
+    have hK : k₀ ≤ K := le_max_left (_) (_)
+    have hcont : ContinuousOn (H) (Icc (k₀) (K)) :=
+      hH.mono (fun k hk => lt_of_lt_of_le (hk₀) (hk.1))
+    have h1 : H (k₀) ≤ (N₀ + n : ℕ) * Real.pi := by
+      have : H (k₀) / Real.pi ≤ N₀ := by
+        have := Nat.le_ceil (H (k₀) / Real.pi)
+        simp only [N₀]
+        push_cast
+        linarith
+      rw [div_le_iff₀ (Real.pi_pos)] at this
+      push_cast
+      nlinarith [Real.pi_pos]
+    have h2 : (N₀ + n : ℕ) * Real.pi ≤ H (K) := by
+      have hKpos : 0 < K := lt_of_lt_of_le (hk₀) (hK)
+      have := pruferAngle_ge (P) (hKpos) (hlow (K) (hK))
+      have hA := bcAngle_mem (P.Ba.α) (P.Ba.β) (P.L.p (P.a)) (K)
+      have hB := bcAngle_mem (P.Bb.α) (P.Bb.β) (P.L.p (P.b)) (K)
+      rw [(pruferAngle_spec (P) (hKpos)).1] at this
+      have h3 : ((N₀ + n) * Real.pi + Real.pi) / (c * (P.b - P.a)) ≤ K := le_max_right (_) (_)
+      rw [div_le_iff₀ (hcb)] at h3
+      simp only [H, B]
+      push_cast
+      nlinarith [hA.1, hB.2]
+    exact intermediate_value_Icc (hK) (hcont) ⟨h1, h2⟩
+  choose k hk hkH using hex
+  have hkpos : ∀ n, 0 < k (n) := fun n => lt_of_lt_of_le (hk₀) ((hk (n)).1)
+  refine Set.infinite_of_injective_forall_mem (f := fun n => k (n) ^ 2) (fun n m h => ?_)
+    (fun n => ?_)
+  · have : k (n) = k (m) := (sq_eq_sq₀ ((hkpos (n)).le) ((hkpos (m)).le)).1 (h)
+    have h' := hkH (n)
+    rw [this, hkH (m)] at h'
+    have := mul_right_cancel₀ (Real.pi_pos.ne') (h')
+    have : N₀ + m = N₀ + n := by exact_mod_cast this
+    omega
+  · obtain ⟨ha, hd⟩ := pruferAngle_spec (P) (hkpos (n))
+    refine isEigenvalue_of_prufer (hkpos (n)) (ha) (hd) (m := N₀ + n) (?_) (by omega)
+    have := hkH (n)
+    simp only [H, B] at this
+    linarith
+
+end ExistsEigenvalueSeq
+
 /-- The eigenvalues of `P` form a sequence `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`. -/
 theorem exists_eigenvalue_seq (P : Problem) :
     ∃ «λₙ» : ℕ → ℝ, StrictMono («λₙ») ∧ 0 ≤ «λₙ» (0) ∧
       Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop) ∧
       Set.range («λₙ») = eigenvalueSet (P) := by
-  -- TODO: prove.
-  sorry
+  have hnonneg : eigenvalueSet (P) ⊆ Set.Ici (0) := fun μ hμ => eigenvalue_nonneg (hμ)
+  have hfin : ∀ M : ℝ, (eigenvalueSet (P) ∩ Set.Iic (M)).Finite :=
+    eigenvalueSet_inter_Iic_finite (P)
+  have hinf : (eigenvalueSet (P)).Infinite := eigenvalueSet_infinite (P)
+  -- An infinite set with finitely many elements below each bound is order-isomorphic to `ℕ`; its
+  -- enumeration is the required sequence.
+  set S := eigenvalueSet (P)
+  have hIcc : ∀ a b : S, (Set.Icc (a) (b)).Finite := fun a b =>
+    ((hfin (b)).preimage (Subtype.val_injective.injOn)).subset (fun x hx => ⟨x.2, hx.2⟩)
+  let _ : LocallyFiniteOrder (S) := LocallyFiniteOrder.ofFiniteIcc (hIcc)
+  let _ : SuccOrder (S) := LinearLocallyFiniteOrder.succOrder (S)
+  let _ : PredOrder (S) := LinearLocallyFiniteOrder.predOrder (S)
+  have : NoMaxOrder (S) := ⟨fun s => by
+    by_contra h
+    push Not at h
+    exact hinf ((hfin (s)).subset (fun x hx => ⟨hx, h ⟨x, hx⟩⟩))⟩
+  obtain ⟨s₀, hs₀⟩ := hinf.nonempty
+  obtain ⟨m, hm, hmin⟩ := (hfin (s₀)).exists_minimal ⟨s₀, hs₀, Set.mem_Iic.2 (le_rfl)⟩
+  have hm_le : ∀ x ∈ S, m ≤ x := fun x hx => by
+    by_contra hlt
+    push Not at hlt
+    exact absurd (hmin ⟨hx, hlt.le.trans (hm.2)⟩ (hlt.le)) (not_le.2 (hlt))
+  let _ : OrderBot (S) := { bot := ⟨m, hm.1⟩, bot_le := fun x => hm_le (x) (x.2) }
+  let e : S ≃o ℕ := orderIsoNatOfLinearSuccPredArch
+  refine ⟨fun n => (e.symm (n) : ℝ), fun i j hij => e.symm.strictMono (hij),
+    hnonneg ((e.symm (0)).2), ?_, ?_⟩
+  · refine Filter.tendsto_atTop.2 (fun M => ?_)
+    have hf : {n : ℕ | (e.symm (n) : ℝ) ≤ M}.Finite :=
+      ((hfin (M)).preimage ((Subtype.val_injective.comp (e.symm.injective)).injOn)).subset
+        (fun n hn => ⟨(e.symm (n)).2, hn⟩)
+    rw [← Nat.cofinite_eq_atTop]
+    filter_upwards [hf.eventually_cofinite_notMem] with n hn
+    exact le_of_lt (lt_of_not_ge (hn))
+  · ext x
+    exact ⟨fun ⟨n, hn⟩ => hn ▸ (e.symm (n)).2, fun hx => ⟨e ⟨x, hx⟩, by simp⟩⟩
 
 /-- The eigenvalues of `P` in increasing order, `λ₀ < λ₁ < ⋯`. -/
 noncomputable def eigenvalues (P : Problem) : ℕ → ℝ :=
