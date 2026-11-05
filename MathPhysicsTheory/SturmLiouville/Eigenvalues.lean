@@ -69,12 +69,35 @@ theorem isEigenvalue_of_isEigenfunction {P : Problem} {«λₙ» : ℝ} {Xₙ : 
     (h : IsEigenfunction (P) («λₙ») (Xₙ)) : IsEigenvalue (P) («λₙ») :=
   ⟨Xₙ, h⟩
 
-/-- An infinite set with finitely many elements below each bound is the range of a strictly
-increasing sequence `s₀ < s₁ < ⋯` tending to `+∞`. -/
-theorem exists_strictMono_range_eq_of_inter_Iic_finite {α : Type*} [LinearOrder (α)]
-    {S : Set (α)} (hinf : S.Infinite) (hfin : ∀ M : α, (S ∩ Set.Iic (M)).Finite) :
-    ∃ s : ℕ → α, StrictMono (s) ∧ Filter.Tendsto (s) (Filter.atTop) (Filter.atTop) ∧
-      Set.range (s) = S := by
+/-- The eigenvalues of `P` form a sequence `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`. -/
+theorem exists_eigenvalue_seq (P : Problem) :
+    ∃ «λₙ» : ℕ → ℝ, StrictMono («λₙ») ∧ 0 ≤ «λₙ» (0) ∧
+      Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop) ∧
+      Set.range («λₙ») = eigenvalueSet (P) := by
+  -- The eigenvalues are nonnegative: multiply the equation by an eigenfunction `Y` and integrate
+  -- by parts (the Rayleigh quotient). The boundary terms are nonnegative because `α₁ β₁ ≤ 0` and
+  -- `α₂ β₂ ≥ 0`, and `∫ (p Y'² - q Y²)` is nonnegative because `p > 0` and `q ≤ 0`. See the module
+  -- note for the endpoint cases that come from `deriv` being two-sided.
+  have hnonneg : eigenvalueSet (P) ⊆ Set.Ici (0) := by
+    -- TODO: prove.
+    sorry
+  -- Only finitely many eigenvalues lie below each bound: they lie in the union of the spectra of
+  -- four separated problems (each endpoint carries its own Robin condition or a Dirichlet one),
+  -- together with at most two exceptional values, and by Prüfer's transformation each of these
+  -- spectra is a sequence tending to `+∞`. See the module note.
+  have hfin : ∀ M : ℝ, (eigenvalueSet (P) ∩ Set.Iic (M)).Finite := by
+    -- TODO: prove.
+    sorry
+  -- There are infinitely many eigenvalues: every eigenvalue of the Dirichlet problem with the same
+  -- `p`, `q` and `w` is one (extend the eigenfunction by a jump outside `[a, b]`, which makes
+  -- `deriv` vanish at the endpoints), and by Prüfer's transformation the Dirichlet problem has
+  -- infinitely many eigenvalues. See the module note.
+  have hinf : (eigenvalueSet (P)).Infinite := by
+    -- TODO: prove.
+    sorry
+  -- An infinite set with finitely many elements below each bound is order-isomorphic to `ℕ`; its
+  -- enumeration is the required sequence.
+  set S := eigenvalueSet (P)
   have hIcc : ∀ a b : S, (Set.Icc (a) (b)).Finite := fun a b =>
     ((hfin (b)).preimage (Subtype.val_injective.injOn)).subset (fun x hx => ⟨x.2, hx.2⟩)
   let _ : LocallyFiniteOrder (S) := LocallyFiniteOrder.ofFiniteIcc (hIcc)
@@ -85,16 +108,17 @@ theorem exists_strictMono_range_eq_of_inter_Iic_finite {α : Type*} [LinearOrder
     push Not at h
     exact hinf ((hfin (s)).subset (fun x hx => ⟨hx, h ⟨x, hx⟩⟩))⟩
   obtain ⟨s₀, hs₀⟩ := hinf.nonempty
-  obtain ⟨m, hm, hmin⟩ := (hfin (s₀)).exists_minimal ⟨s₀, hs₀, le_rfl⟩
+  obtain ⟨m, hm, hmin⟩ := (hfin (s₀)).exists_minimal ⟨s₀, hs₀, Set.mem_Iic.2 (le_rfl)⟩
   have hm_le : ∀ x ∈ S, m ≤ x := fun x hx => by
     by_contra hlt
     push Not at hlt
     exact absurd (hmin ⟨hx, hlt.le.trans (hm.2)⟩ (hlt.le)) (not_le.2 (hlt))
   let _ : OrderBot (S) := { bot := ⟨m, hm.1⟩, bot_le := fun x => hm_le (x) (x.2) }
   let e : S ≃o ℕ := orderIsoNatOfLinearSuccPredArch
-  refine ⟨fun n => (e.symm (n) : α), fun i j hij => e.symm.strictMono (hij), ?_, ?_⟩
+  refine ⟨fun n => (e.symm (n) : ℝ), fun i j hij => e.symm.strictMono (hij),
+    hnonneg ((e.symm (0)).2), ?_, ?_⟩
   · refine Filter.tendsto_atTop.2 (fun M => ?_)
-    have hf : {n : ℕ | (e.symm (n) : α) ≤ M}.Finite :=
+    have hf : {n : ℕ | (e.symm (n) : ℝ) ≤ M}.Finite :=
       ((hfin (M)).preimage ((Subtype.val_injective.comp (e.symm.injective)).injOn)).subset
         (fun n hn => ⟨(e.symm (n)).2, hn⟩)
     rw [← Nat.cofinite_eq_atTop]
@@ -102,47 +126,6 @@ theorem exists_strictMono_range_eq_of_inter_Iic_finite {α : Type*} [LinearOrder
     exact le_of_lt (lt_of_not_ge (hn))
   · ext x
     exact ⟨fun ⟨n, hn⟩ => hn ▸ (e.symm (n)).2, fun hx => ⟨e ⟨x, hx⟩, by simp⟩⟩
-
-/-- The eigenvalues of `P` are nonnegative.
-
-Proof: multiply the equation by an eigenfunction `Y` and integrate by parts (the Rayleigh
-quotient). The boundary terms are nonnegative because `α₁ β₁ ≤ 0` and `α₂ β₂ ≥ 0`, and the
-integral `∫ (p Y'² - q Y²)` is nonnegative because `p > 0` and `q ≤ 0`. See the module note for
-the endpoint cases that come from `deriv` being two-sided. -/
-theorem eigenvalueSet_subset_Ici (P : Problem) : eigenvalueSet (P) ⊆ Set.Ici (0) := by
-  -- TODO: prove.
-  sorry
-
-/-- Only finitely many eigenvalues of `P` lie below each bound `M`.
-
-Proof: the eigenvalues lie in the union of the spectra of four separated problems (each endpoint
-carries its own Robin condition or a Dirichlet one), together with at most two exceptional values.
-By Prüfer's transformation, each of these spectra is a sequence tending to `+∞`. See the module
-note. -/
-theorem eigenvalueSet_inter_Iic_finite (P : Problem) (M : ℝ) :
-    (eigenvalueSet (P) ∩ Set.Iic (M)).Finite := by
-  -- TODO: prove.
-  sorry
-
-/-- `P` has infinitely many eigenvalues.
-
-Proof: every eigenvalue of the Dirichlet problem on `[a, b]` with the same `p`, `q` and `w` is an
-eigenvalue of `P` (extend the eigenfunction by a jump outside `[a, b]`, which makes `deriv` vanish
-at the endpoints). By Prüfer's transformation the Dirichlet problem has infinitely many eigenvalues.
-See the module note. -/
-theorem eigenvalueSet_infinite (P : Problem) : (eigenvalueSet (P)).Infinite := by
-  -- TODO: prove.
-  sorry
-
-/-- The eigenvalues of `P` form a sequence `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`. -/
-theorem exists_eigenvalue_seq (P : Problem) :
-    ∃ «λₙ» : ℕ → ℝ, StrictMono («λₙ») ∧ 0 ≤ «λₙ» (0) ∧
-      Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop) ∧
-      Set.range («λₙ») = eigenvalueSet (P) := by
-  obtain ⟨«λₙ», hmono, htends, hrange⟩ :=
-    exists_strictMono_range_eq_of_inter_Iic_finite (eigenvalueSet_infinite (P))
-      (eigenvalueSet_inter_Iic_finite (P))
-  exact ⟨«λₙ», hmono, eigenvalueSet_subset_Ici (P) (hrange ▸ ⟨0, rfl⟩), htends, hrange⟩
 
 /-- The eigenvalues of `P` in increasing order, `λ₀ < λ₁ < ⋯`. -/
 noncomputable def eigenvalues (P : Problem) : ℕ → ℝ :=

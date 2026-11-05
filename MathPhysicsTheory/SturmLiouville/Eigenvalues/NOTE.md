@@ -3,15 +3,15 @@
 The classical theorem (Herman §4.2; Birkhoff–Rota, Ch. 10; Coddington–Levinson,
 Ch. 8) says that a regular Sturm-Liouville problem has eigenvalues
 $\lambda_0 < \lambda_1 < \cdots$ with $\lambda_n \to +\infty$, and no others. The
-Lean proof splits it into three facts about $E$ = `eigenvalueSet P`:
+Lean proof splits it into three facts about $E$ = `eigenvalueSet P`, stated as
+`have`s inside the proof:
 
-1. $E \subseteq [0, \infty)$ (`eigenvalueSet_subset_Ici`);
-2. $E \cap (-\infty, M]$ is finite for every $M$ (`eigenvalueSet_inter_Iic_finite`);
-3. $E$ is infinite (`eigenvalueSet_infinite`).
+1. $E \subseteq [0, \infty)$ (`hnonneg`);
+2. $E \cap (-\infty, M]$ is finite for every $M$ (`hfin`);
+3. $E$ is infinite (`hinf`).
 
-Order theory then finishes the proof
-(`exists_strictMono_range_eq_of_inter_Iic_finite`): a set with these properties
-is order-isomorphic to $\mathbb{N}$. Its enumeration is strictly increasing,
+Order theory then finishes the proof: a set with these properties is
+order-isomorphic to $\mathbb{N}$. Its enumeration is strictly increasing,
 starts at a value $\ge 0$ and tends to $+\infty$, since only finitely many terms
 lie below each bound.
 
