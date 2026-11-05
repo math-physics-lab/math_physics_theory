@@ -11,6 +11,9 @@ import MathPhysicsTheory.Linter.ArgParens
 The Sturm-Liouville operator with coefficients `p` and `q` acts on a function `y` by
 `L y = (p y')' + q y`.
 
+`applyWithin` takes the derivatives within a set `s`; on an interval they are one-sided at the
+endpoints. Sturm-Liouville problems use it on `[a, b]`.
+
 ## Example
 
 With `p = 1` and `q = 0` the operator is the second derivative, so `L sin = -sin`.
@@ -56,6 +59,22 @@ theorem apply_expanded (L : Operator) {y : ℝ → ℝ} (hp : Differentiable (�
     (hp (x)).hasDerivAt.mul ((hy (x)).hasDerivAt)
   rw [apply, h.deriv]
   ring
+
+/-- The Sturm-Liouville differential expression `L y = (p y')' + q y` with the derivatives taken
+within a set `s`. On an interval `s` the derivatives at the endpoints are one-sided. -/
+noncomputable def applyWithin (L : Operator) (s : Set (ℝ)) (y : ℝ → ℝ) : ℝ → ℝ :=
+  fun x => derivWithin (fun x => L.p (x) * derivWithin (y) (s) (x)) (s) (x) + L.q (x) * y (x)
+
+/-- For `y` and `p y'` differentiable, the derivatives within `s` are the usual derivatives. -/
+theorem applyWithin_eq_apply (L : Operator) {s : Set (ℝ)} {y : ℝ → ℝ} {x : ℝ}
+    (hs : UniqueDiffOn (ℝ) (s)) (hx : x ∈ s) (hy : Differentiable (ℝ) (y))
+    (hpy : DifferentiableAt (ℝ) (fun x => L.p (x) * deriv (y) (x)) (x)) :
+    L.applyWithin (s) (y) (x) = L.apply (y) (x) := by
+  have h : Set.EqOn (fun x => L.p (x) * derivWithin (y) (s) (x))
+      (fun x => L.p (x) * deriv (y) (x)) (s) := fun z hz => by
+    simp only [(hy (z)).derivWithin (hs (z) (hz))]
+  simp only [applyWithin, apply]
+  rw [derivWithin_congr (h) (h (hx)), hpy.derivWithin (hs (x) (hx))]
 
 end Operator
 

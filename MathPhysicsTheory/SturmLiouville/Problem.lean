@@ -16,6 +16,9 @@ asks for the functions `y` and numbers `λ` with
 * `(p y')' + q y = -λ w y` on `[a, b]`,
 * `α₁ y(a) + β₁ y'(a) = 0` and `α₂ y(b) + β₂ y'(b) = 0`.
 
+Derivatives are taken within `[a, b]`, so they are one-sided at the endpoints and do not depend on
+the values of `y` or `p` outside `[a, b]`.
+
 The coefficients satisfy, on `[a, b]`:
 
 * `p` is continuously differentiable, `q` and `w` are continuous;
@@ -53,12 +56,15 @@ noncomputable def dirichlet : Problem where
     Bb_mul_nonneg := by simp }
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
-  simp [dirichlet, Operator.apply, Robin.Operator.Satisfies,
-    Robin.Operator.apply]
+  refine ⟨Real.contDiff_sin.contDiffOn, fun x hx => ?_, ?_, ?_⟩
+  · rw [Operator.applyWithin_eq_apply (_) (uniqueDiffOn_Icc (dirichlet.a_lt_b)) (hx)
+      (Real.differentiable_sin) (by simp [dirichlet])]
+    simp [dirichlet, Operator.apply]
+  all_goals simp [dirichlet, Robin.Operator.SatisfiesWithin, Robin.Operator.applyWithin]
 
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
-  simp [dirichlet, Problem.IsSolution, Robin.Operator.Satisfies, Robin.Operator.apply]
+  simp [dirichlet, Problem.IsSolution, Robin.Operator.SatisfiesWithin,
+    Robin.Operator.applyWithin]
 ```
 
 ## References
@@ -123,18 +129,21 @@ structure Problem where
 namespace Problem
 
 /-- `y` solves the problem with parameter `λ`: `y` is twice continuously differentiable on
-`[a, b]`, `L y = -λ w y` on `[a, b]`, `Ba y = 0` and `Bb y = 0`. -/
+`[a, b]`, `L y = -λ w y` on `[a, b]`, `Ba y = 0` and `Bb y = 0`, with all derivatives taken
+within `[a, b]`. -/
 def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
   ContDiffOn (ℝ) (2) (y) (Set.Icc (P.a) (P.b)) ∧
-  (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -«λ» * P.w (x) * y (x)) ∧
-    P.Ba.Satisfies (0) (y) ∧ P.Bb.Satisfies (0) (y)
+  (∀ x ∈ Set.Icc (P.a) (P.b),
+    P.L.applyWithin (Set.Icc (P.a) (P.b)) (y) (x) = -«λ» * P.w (x) * y (x)) ∧
+    P.Ba.SatisfiesWithin (Set.Icc (P.a) (P.b)) (0) (y) ∧
+    P.Bb.SatisfiesWithin (Set.Icc (P.a) (P.b)) (0) (y)
 
 /-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `λ`. -/
 theorem isSolution_zero (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
   intro «λ»
   refine ⟨contDiffOn_const, ?_⟩
-  simp [Operator.apply, BoundaryConditions.Robin.Operator.Satisfies,
-    BoundaryConditions.Robin.Operator.apply]
+  simp [Operator.applyWithin, BoundaryConditions.Robin.Operator.SatisfiesWithin,
+    BoundaryConditions.Robin.Operator.applyWithin]
 
 end Problem
 

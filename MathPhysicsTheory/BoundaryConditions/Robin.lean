@@ -15,6 +15,9 @@ Sturm-Liouville problem.
 
 `β = 0` gives the Dirichlet operator `y(c)`, and `α = 0` the Neumann operator `y'(c)`.
 
+`applyWithin` and `SatisfiesWithin` take the derivative within a set `s`; at an endpoint `c` of an
+interval `s` it is one-sided. Sturm-Liouville problems use them on `[a, b]`.
+
 ## References
 
 * R. L. Herman, *Introduction to Partial Differential Equations*, §4.1
@@ -77,6 +80,22 @@ theorem satisfies_const_mul (B : Operator) {g : ℝ → ℝ} {y : ℝ → ℝ} (
     B.Satisfies (fun x => k * g (x)) (fun x => k * y (x)) := by
   unfold Satisfies at h ⊢
   rw [apply_const_mul, h]
+
+/-- The Robin boundary operator `B y = α y(c) + β y'(c)` with the derivative `y'(c)` taken within
+a set `s`. At an endpoint of an interval `s` this is the one-sided derivative. -/
+noncomputable def applyWithin (B : Operator) (s : Set (ℝ)) (y : ℝ → ℝ) : ℝ :=
+  B.α * y (B.c) + B.β * derivWithin (y) (s) (B.c)
+
+/-- `y` satisfies the Robin boundary condition with right-hand side `g`, with the derivative
+taken within `s`: `α y(c) + β y'(c) = g(c)`. -/
+def SatisfiesWithin (B : Operator) (s : Set (ℝ)) (g : ℝ → ℝ) (y : ℝ → ℝ) : Prop :=
+  B.applyWithin (s) (y) = g (B.c)
+
+/-- For `y` differentiable at `c`, the derivative within `s` is the usual derivative. -/
+theorem applyWithin_eq_apply (B : Operator) {s : Set (ℝ)} {y : ℝ → ℝ}
+    (hs : UniqueDiffWithinAt (ℝ) (s) (B.c)) (hy : DifferentiableAt (ℝ) (y) (B.c)) :
+    B.applyWithin (s) (y) = B.apply (y) := by
+  rw [applyWithin, apply, hy.derivWithin (hs)]
 
 end Operator
 
