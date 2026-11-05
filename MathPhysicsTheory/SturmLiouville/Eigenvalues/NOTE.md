@@ -1,4 +1,4 @@
-## Proof plan for `exists_eigenvalue_seq`
+## Proof of `exists_eigenvalue_seq`
 
 The classical theorem (Herman §4.2; Birkhoff–Rota, Ch. 10; Coddington–Levinson,
 Ch. 8) says that a regular Sturm-Liouville problem has eigenvalues
@@ -45,18 +45,13 @@ of the equation on $[a, b]$ that, at each endpoint $c$, either
 * (R) satisfies the given Robin condition, or
 * (D) satisfies $Y(c) = 0$,
 
-unless $\lambda = -q(c)/w(c)$, which is at most two numbers. Conversely, every
-eigenvalue $\lambda$ of the Dirichlet problem, with eigenfunction $Y$, lies in
-$E$. Set $X = Y$ on $[a, b]$ and $X = Y + 1$ outside. Then $X$ jumps at $a$ and
-$b$, so `deriv X` vanishes there and both Robin conditions read $0 = 0$. Also
-$Y'(c) \ne 0$ (otherwise $Y \equiv 0$ by uniqueness), so $h$ jumps at $c$ and the
-equation at $c$ reads $0 = 0$.
+unless $\lambda = -q(c)/w(c)$, which is at most two numbers (`eigenfunction_data`).
 
-Write $\sigma(T_a, T_b)$ for the spectrum of the honest problem with condition
-$T_a \in \{R, D\}$ at $a$ and $T_b$ at $b$. Then
-
-$$\sigma(D, D) \subseteq E \subseteq \bigcup_{T_a, T_b \in \{R, D\}} \sigma(T_a, T_b)
-  \cup \{-q(a)/w(a), -q(b)/w(b)\}.$$
+Conversely, let $Y$ be a Dirichlet eigenfunction for $\lambda$ with
+$p(c)Y'(c) \ne 0$ at both ends. Then $\lambda \in E$. Set $X = Y$ on $[a, b]$ and
+$X = Y + 1$ outside. Then $X$ jumps at $a$ and $b$, so `deriv X` vanishes there
+and both Robin conditions read $0 = 0$. Also $h$ jumps at each end, so the
+equation there reads $0 = 0$ too.
 
 ### Step 1: $E \subseteq [0, \infty)$ (Rayleigh quotient, Herman §4.2)
 
@@ -72,34 +67,58 @@ at $b$ works the same way, using $\alpha_2 \beta_2 \ge 0$. Since
 $\int w Y^2 > 0$, we get $\lambda \ge 0$. The two exceptional values satisfy
 $-q(c)/w(c) \ge 0$ directly.
 
-### Steps 2 and 3: Prüfer's transformation (Birkhoff–Rota Ch. 10, Teschl §5.5)
+### Step 2: $E \cap (-\infty, M]$ is finite (orthogonality and compactness)
 
-Fix separated conditions $(T_a, T_b)$ and let $u(\cdot, \lambda)$ be the solution
-of $(pu')' + (q + \lambda w) u = 0$ with initial data satisfying $T_a$. Write
-$u = \rho \sin\theta$ and $pu' = \rho\cos\theta$. Then
+Suppose infinitely many eigenvalues lie in $(-\infty, M]$. Discard the two
+exceptional values. Each remaining eigenvalue has an eigenfunction that satisfies
+(R) or (D) at each end; normalise it so that $\int_a^b w Y^2 = 1$. There are only
+four combinations of (R) and (D), so infinitely many of these eigenvalues share
+one. For two of them, $\lambda \ne \mu$, Green's identity gives
 
-$$\theta' = \frac{\cos^2\theta}{p} + (q + \lambda w)\sin^2\theta, \qquad
-  \theta(a, \lambda) = A \in [0, \pi),$$
+$$(\mu - \lambda) \int_a^b w Y_\lambda Y_\mu
+  = \left[p \left(Y_\lambda' Y_\mu - Y_\lambda Y_\mu'\right)\right]_a^b = 0,$$
 
-and $T_b$ holds exactly when $\theta(b, \lambda) \equiv B \pmod \pi$ for a fixed
-$B \in (0, \pi]$. The standard facts are:
+because both satisfy the same condition at each end, so their Wronskian vanishes
+there. Hence $\int_a^b w (Y_\lambda - Y_\mu)^2 = 2$.
 
-* $\lambda \mapsto \theta(b, \lambda)$ is continuous, by continuous dependence on
-  parameters (Grönwall);
-* it is strictly increasing, by the Sturm comparison theorem applied to the
-  $\theta$ equation;
-* it tends to $0$ as $\lambda \to -\infty$ and to $+\infty$ as $\lambda \to +\infty$;
-* $\theta$ crosses multiples of $\pi$ only upwards, because $\theta' = 1/p > 0$
-  there.
+On the other hand, the Rayleigh quotient gives
+$\int_a^b p Y_\lambda'^2 \le \lambda \le M$, so $\int_a^b Y_\lambda'^2 \le C$ for a
+constant $C$. Since $|Y'| \le t/2 + Y'^2/(2t)$, this gives the uniform estimate
+$|Y_\lambda(x) - Y_\lambda(y)| \le t|x - y|/2 + C/(2t)$ for every $t > 0$, and
+also a uniform bound on $|Y_\lambda|$. By Arzelà–Ascoli
+(`BoundedContinuousFunction.arzela_ascoli`), two of the $Y_\lambda$ are uniformly
+within $\delta$ of each other. For small $\delta$ this contradicts
+$\int_a^b w (Y_\lambda - Y_\mu)^2 = 2$.
 
-So $\sigma(T_a, T_b) = \{\lambda_n : \theta(b, \lambda_n) = B + n\pi\}$, with exactly
-one $\lambda_n$ for each $n \ge 0$, and $\lambda_n \uparrow \infty$. Each of the
-four spectra therefore meets $(-\infty, M]$ in a finite set, which gives fact 2.
-$\sigma(D, D)$ is infinite, which gives fact 3.
+### Step 3: $E$ is infinite (a scaled Prüfer transformation)
 
-### Lean prerequisites
+For $k > 0$, let $\theta_k$ solve
 
-Mathlib already has existence and uniqueness for ODEs (`IsPicardLindelof`,
-`ODE_solution_unique`) and Grönwall's inequality, which give continuous
-dependence on $\lambda$. Still to formalise: the Prüfer angle, the comparison
-argument for monotonicity, and the limits as $\lambda \to \pm\infty$.
+$$\theta' = \frac{k \cos^2\theta}{p} + \left(\frac{q}{k} + k w\right)\sin^2\theta,
+  \qquad \theta(a) = 0.$$
+
+It exists by Picard–Lindelöf (`IsPicardLindelof`), because the right-hand side is
+bounded and Lipschitz in $\theta$. Put
+$\rho(x) = \exp \int_a^x \left(\frac{k}{p} - \frac{q}{k} - k w\right)
+\sin\theta \cos\theta$ and $u = \rho \sin\theta$. Then $p u' = k \rho \cos\theta$
+and $(p u')' + (q + k^2 w) u = 0$. So whenever $\theta_k(b) = m\pi$ with $m \ge 1$,
+$u$ is a Dirichlet eigenfunction for $\lambda = k^2$. Extended by a jump outside
+$[a, b]$, it is an eigenfunction of `P` (Step 0).
+
+* $k \mapsto \theta_k(b)$ is continuous on $(0, \infty)$, by Grönwall's
+  inequality (`dist_le_of_approx_trajectories_ODE`).
+* For large $k$ the right-hand side is at least $c k$ for some $c > 0$, so
+  $\theta_k(b) \ge c k (b - a) \to \infty$.
+
+By the intermediate value theorem, $\theta_k(b)$ takes every value $m\pi$ with
+$m$ large. Different values of $m$ give different $k$, and so different
+eigenvalues $k^2$.
+
+### Lean structure
+
+The steps are `private` lemmas in `Eigenvalues.lean`:
+
+* Step 0: `eigenfunction_data`;
+* Step 1: `rayleigh` and `eigenvalue_nonneg`;
+* Step 2: `orthogonal` and `eigenvalueSet_inter_Iic_finite`;
+* Step 3: `isEigenvalue_of_prufer` and `eigenvalueSet_infinite`.
