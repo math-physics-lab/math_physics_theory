@@ -55,6 +55,10 @@ noncomputable def apply (B : Operator) (y : ℝ → ℝ) : ℝ :=
 theorem apply_eq (B : Operator) (y : ℝ → ℝ) : B.apply (y) = deriv (y) (B.c) := by
   simp [apply, Robin.Operator.apply]
 
+/-- The Robin operator `B.toRobin` acts as `B`. -/
+@[simp]
+theorem toRobin_apply (B : Operator) (y : ℝ → ℝ) : B.toRobin.apply (y) = B.apply (y) := rfl
+
 /-- The Neumann operator is additive on functions differentiable at `c`. -/
 theorem apply_add (B : Operator) {y z : ℝ → ℝ} (hy : DifferentiableAt (ℝ) (y) (B.c))
     (hz : DifferentiableAt (ℝ) (z) (B.c)) :
@@ -70,6 +74,11 @@ theorem apply_const_mul (B : Operator) (k : ℝ) (y : ℝ → ℝ) :
 the Robin condition of `B.toRobin`. -/
 def Satisfies (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) : Prop :=
   B.toRobin.Satisfies (g) (y)
+
+/-- The Robin condition of `B.toRobin` is the Neumann condition of `B`. -/
+@[simp]
+theorem toRobin_satisfies_iff (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) :
+    B.toRobin.Satisfies (g) (y) ↔ B.Satisfies (g) (y) := Iff.rfl
 
 /-- `y` satisfies the Neumann condition with right-hand side `g` iff `y'(c) = g(c)`. -/
 theorem satisfies_iff (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) :
