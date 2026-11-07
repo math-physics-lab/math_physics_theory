@@ -32,8 +32,8 @@ problem and is nonzero at `π / 2`.
 
 ```lean
 example : Eigenvalues.IsEigenvalue (dirichlet) (1) :=
-  ⟨Real.sin, ⟨⟨Real.contDiff_sin.contDiffOn, by simp [dirichlet, Operator.apply,
-    Robin.Operator.Satisfies, Robin.Operator.apply]⟩, Real.pi / 2,
+  ⟨Real.sin, ⟨⟨Real.contDiff_sin.contDiffOn, by
+    simp [dirichlet, Operator.apply, Dirichlet.Operator.satisfies_iff]⟩, Real.pi / 2,
     ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩⟩
 ```
 
