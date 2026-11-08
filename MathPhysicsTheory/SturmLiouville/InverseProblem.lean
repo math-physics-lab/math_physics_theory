@@ -29,6 +29,11 @@ functions are allowed on `[a, b]`:
 The remaining clauses of `Assumptions` concern only the boundary operators, which are part of the
 given data.
 
+The given eigenpairs must themselves look like eigenpairs of a Sturm-Liouville problem. This is
+recorded in `InverseProblem.Assumptions`: `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`, and for every `n` the
+function `Xₙ` is twice continuously differentiable, satisfies both boundary conditions, is not
+identically zero and has exactly `n` zeros in `(a, b)`.
+
 ## References
 
 * R. L. Herman, *Introduction to Partial Differential Equations*, §4.1
@@ -38,6 +43,28 @@ given data.
 @[expose] public section
 
 namespace MathPhysicsTheory.SturmLiouville
+
+/-- The assumptions on the data of an inverse Sturm-Liouville problem on `[a, b]` with Robin
+boundary operators `Ba`, `Bb`, eigenvalues `λₙ` and eigenfunctions `Xₙ`. They are the properties
+that eigenpairs of a Sturm-Liouville problem have, required for every `n`. -/
+structure InverseProblem.Assumptions (a b : ℝ) (Ba Bb : BoundaryConditions.Robin.Operator)
+    («λₙ» : ℕ → ℝ) (Xₙ : ℕ → ℝ → ℝ) : Prop where
+  /-- The eigenvalues are strictly increasing: `λ₀ < λ₁ < ⋯`. -/
+  lam_strictMono : StrictMono («λₙ»)
+  /-- The smallest eigenvalue is nonnegative: `0 ≤ λ₀`. -/
+  lam_zero_nonneg : 0 ≤ «λₙ» (0)
+  /-- The eigenvalues tend to infinity: `λₙ → +∞`. -/
+  lam_tendsto : Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop)
+  /-- Each `Xₙ` is twice continuously differentiable on `[a, b]`. -/
+  X_contDiffOn : ∀ n, ContDiffOn (ℝ) (2) (Xₙ (n)) (Set.Icc (a) (b))
+  /-- Each `Xₙ` satisfies the boundary condition `Ba`. -/
+  X_Ba : ∀ n, Ba.condition (0) (Xₙ (n))
+  /-- Each `Xₙ` satisfies the boundary condition `Bb`. -/
+  X_Bb : ∀ n, Bb.condition (0) (Xₙ (n))
+  /-- Each `Xₙ` is not identically zero on `[a, b]`. -/
+  X_ne : ∀ n, ∃ x ∈ Set.Icc (a) (b), Xₙ (n) (x) ≠ 0
+  /-- Each `Xₙ` has exactly `n` zeros in `(a, b)`. -/
+  X_zeros : ∀ n, {x | x ∈ Set.Ioo (a) (b) ∧ Xₙ (n) (x) = 0}.encard = n
 
 /-- An inverse Sturm-Liouville problem: an interval `[a, b]`, Robin boundary operators `Ba` at `a`
 and `Bb` at `b`, and the known eigenvalues `λₙ` with eigenfunctions `Xₙ`. The operator `L` and the
@@ -57,6 +84,8 @@ structure InverseProblem where
   «λₙ» : ℕ → ℝ
   /-- The known eigenfunctions. -/
   Xₙ : ℕ → ℝ → ℝ
+  /-- The assumptions on the eigenvalues and eigenfunctions. -/
+  assumptions : InverseProblem.Assumptions (a) (b) (Ba) (Bb) («λₙ») (Xₙ)
 
 namespace InverseProblem
 
@@ -67,7 +96,7 @@ The `Assumptions` fix the allowed types of the unknowns: `p` is `C¹` and positi
 continuous and positive, and `q` is continuous with `q ≤ 0` (so `q` may be zero, but `p` and `w`
 may not). -/
 def IsSolution (I : InverseProblem) (L : Operator) (w : ℝ → ℝ) : Prop :=
-  Assumptions (I.a) (I.b) (L) (w) (I.Ba) (I.Bb) ∧
+  SturmLiouville.Assumptions (I.a) (I.b) (L) (w) (I.Ba) (I.Bb) ∧
     ∀ n, ∀ x ∈ Set.Icc (I.a) (I.b),
       L.apply (I.Xₙ (n)) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0
 
