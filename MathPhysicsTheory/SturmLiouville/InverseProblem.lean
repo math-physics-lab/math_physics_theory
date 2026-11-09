@@ -33,7 +33,7 @@ The given eigenpairs must come from a Sturm-Liouville problem. This is recorded 
 `InverseProblem.Assumptions`: there is a `Problem` on `[a, b]` with the same boundary operators
 whose ordered eigenvalues are the `λₙ` and which has `Xₙ` as the eigenfunction for each `λₙ`. The
 properties of eigenpairs (`0 ≤ λ₀ < λ₁ < ⋯`, `λₙ → +∞`, the boundary conditions on `Xₙ`, `n` zeros
-of `Xₙ`) then follow from the theorems in `MathPhysicsTheory.SturmLiouville.EigenValues`.
+of `Xₙ`) then follow from the theorems in `MathPhysicsTheory.SturmLiouville.Eigenvalues`.
 
 ## References
 
