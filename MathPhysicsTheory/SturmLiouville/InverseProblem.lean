@@ -29,10 +29,11 @@ functions are allowed on `[a, b]`:
 The remaining clauses of `Assumptions` concern only the boundary operators, which are part of the
 given data.
 
-The given eigenpairs must themselves look like eigenpairs of a Sturm-Liouville problem. This is
-recorded in `InverseProblem.Assumptions`: `0 ≤ λ₀ < λ₁ < ⋯` with `λₙ → +∞`, and for every `n` the
-function `Xₙ` is twice continuously differentiable, satisfies both boundary conditions, is not
-identically zero and has exactly `n` zeros in `(a, b)`.
+The given eigenpairs must come from a Sturm-Liouville problem. This is recorded in
+`InverseProblem.Assumptions`: there is a `Problem` on `[a, b]` with the same boundary operators
+whose ordered eigenvalues are the `λₙ` and which has `Xₙ` as the eigenfunction for each `λₙ`. The
+properties of eigenpairs (`0 ≤ λ₀ < λ₁ < ⋯`, `λₙ → +∞`, the boundary conditions on `Xₙ`, `n` zeros
+of `Xₙ`) then follow from the theorems in `MathPhysicsTheory.SturmLiouville.EigenValues`.
 
 ## References
 
@@ -45,26 +46,15 @@ identically zero and has exactly `n` zeros in `(a, b)`.
 namespace MathPhysicsTheory.SturmLiouville
 
 /-- The assumptions on the data of an inverse Sturm-Liouville problem on `[a, b]` with Robin
-boundary operators `Ba`, `Bb`, eigenvalues `λₙ` and eigenfunctions `Xₙ`. They are the properties
-that eigenpairs of a Sturm-Liouville problem have, required for every `n`. -/
+boundary operators `Ba`, `Bb`, eigenvalues `λₙ` and eigenfunctions `Xₙ`: the data are the
+eigenpairs of some Sturm-Liouville problem `P` on the same interval with the same boundary
+operators. The `λₙ` are the eigenvalues of `P` in increasing order and `Xₙ` is an eigenfunction for
+`λₙ`, for every `n`. -/
 structure InverseProblem.Assumptions (a b : ℝ) (Ba Bb : BoundaryConditions.Robin.Operator)
     («λₙ» : ℕ → ℝ) (Xₙ : ℕ → ℝ → ℝ) : Prop where
-  /-- The eigenvalues are strictly increasing: `λ₀ < λ₁ < ⋯`. -/
-  lam_strictMono : StrictMono («λₙ»)
-  /-- The smallest eigenvalue is nonnegative: `0 ≤ λ₀`. -/
-  lam_zero_nonneg : 0 ≤ «λₙ» (0)
-  /-- The eigenvalues tend to infinity: `λₙ → +∞`. -/
-  lam_tendsto : Filter.Tendsto («λₙ») (Filter.atTop) (Filter.atTop)
-  /-- Each `Xₙ` is twice continuously differentiable on `[a, b]`. -/
-  X_contDiffOn : ∀ n, ContDiffOn (ℝ) (2) (Xₙ (n)) (Set.Icc (a) (b))
-  /-- Each `Xₙ` satisfies the boundary condition `Ba`. -/
-  X_Ba : ∀ n, Ba.condition (0) (Xₙ (n))
-  /-- Each `Xₙ` satisfies the boundary condition `Bb`. -/
-  X_Bb : ∀ n, Bb.condition (0) (Xₙ (n))
-  /-- Each `Xₙ` is not identically zero on `[a, b]`. -/
-  X_ne : ∀ n, ∃ x ∈ Set.Icc (a) (b), Xₙ (n) (x) ≠ 0
-  /-- Each `Xₙ` has exactly `n` zeros in `(a, b)`. -/
-  X_zeros : ∀ n, {x | x ∈ Set.Ioo (a) (b) ∧ Xₙ (n) (x) = 0}.encard = n
+  /-- Some Sturm-Liouville problem has these eigenpairs. -/
+  exists_problem : ∃ P : Problem, P.a = a ∧ P.b = b ∧ P.Ba = Ba ∧ P.Bb = Bb ∧
+    «λₙ» = Eigenvalues.eigenvalues (P) ∧ ∀ n, Eigenvalues.IsEigenfunction (P) («λₙ» (n)) (Xₙ (n))
 
 /-- An inverse Sturm-Liouville problem: an interval `[a, b]`, Robin boundary operators `Ba` at `a`
 and `Bb` at `b`, and the known eigenvalues `λₙ` with eigenfunctions `Xₙ`. The operator `L` and the
@@ -100,14 +90,11 @@ def IsSolution (I : InverseProblem) (L : Operator) (w : ℝ → ℝ) : Prop :=
     ∀ n, ∀ x ∈ Set.Icc (I.a) (I.b),
       L.apply (I.Xₙ (n)) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0
 
-/-- Existence: if the data `(λₙ, Xₙ)` is the full sequence of eigenpairs (indexed by all `n : ℕ`)
-of some Sturm-Liouville problem `P` on the same interval with the same boundary operators, then the
-inverse problem has a solution, namely the operator `P.L` and the weight `P.w` of `P`. -/
-theorem exists_solution (I : InverseProblem)
-    (h : ∃ P : Problem, P.a = I.a ∧ P.b = I.b ∧ P.Ba = I.Ba ∧ P.Bb = I.Bb ∧
-      ∀ n, Eigenvalues.IsEigenfunction (P) (I.«λₙ» (n)) (I.Xₙ (n))) :
+/-- Existence: an inverse problem has a solution, namely the operator `P.L` and the weight `P.w` of
+a Sturm-Liouville problem `P` whose eigenpairs are the given data. -/
+theorem exists_solution (I : InverseProblem) :
     ∃ (L : Operator) (w : ℝ → ℝ), I.IsSolution (L) (w) := by
-  obtain ⟨P, ha, hb, hBa, hBb, hP⟩ := h
+  obtain ⟨P, ha, hb, hBa, hBb, -, hP⟩ := I.assumptions.exists_problem
   refine ⟨P.L, P.w, ?_, ?_⟩
   · have hA := P.assumptions
     rw [ha, hb, hBa, hBb] at hA
