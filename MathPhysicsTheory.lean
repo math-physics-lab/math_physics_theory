@@ -5,7 +5,6 @@ module
 public import MathPhysicsTheory.BoundaryConditions.Dirichlet
 public import MathPhysicsTheory.BoundaryConditions.Neumann
 public import MathPhysicsTheory.BoundaryConditions.Robin
-public import MathPhysicsTheory.ODE.SelfAdjoint
 public import MathPhysicsTheory.SturmLiouville.Eigenvalues
 public import MathPhysicsTheory.SturmLiouville.InverseProblem
 public import MathPhysicsTheory.SturmLiouville.InverseProblem.Basic

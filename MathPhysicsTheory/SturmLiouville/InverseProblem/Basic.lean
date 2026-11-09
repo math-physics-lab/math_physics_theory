@@ -104,7 +104,7 @@ theorem exists_solution (I : InverseProblem) :
     exact hA
   · intro n x hx
     have hx' : x ∈ Set.Icc (P.a) (P.b) := by rwa [ha, hb]
-    have := (hP (n)).1.apply_eq (hx')
+    have := (hP (n)).1.1.2 (x) (hx')
     linarith
 
 end InverseProblem
