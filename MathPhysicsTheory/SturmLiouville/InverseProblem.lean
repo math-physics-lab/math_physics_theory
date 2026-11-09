@@ -104,6 +104,21 @@ theorem exists_solution (I : InverseProblem) :
     have := (hP (n)).1.2.1 (x) (hx')
     linarith
 
+/-- Uniqueness up to a constant factor: two solutions `(p₁, q₁, w₁)` and `(p₂, q₂, w₂)` of the same
+inverse problem differ by a positive constant `c`, that is `p₂ = c p₁`, `q₂ = c q₁` and
+`w₂ = c w₁` on `[a, b]`.
+
+The factor cannot be removed: the equation `(p Xₙ')' + q Xₙ + λₙ w Xₙ = 0` is linear in
+`(p, q, w)`, so `(c p, c q, c w)` is a solution whenever `(p, q, w)` is, and `c > 0` keeps `p` and
+`w` positive. Fixing the scale, for example `p (a)`, makes the solution unique. -/
+theorem solution_unique (I : InverseProblem) {p₁ q₁ p₂ q₂ w₁ w₂ : ℝ → ℝ}
+    (h₁ : I.IsSolution ({ p := p₁, q := q₁ }) (w₁))
+    (h₂ : I.IsSolution ({ p := p₂, q := q₂ }) (w₂)) :
+    ∃ c : ℝ, 0 < c ∧ ∀ x ∈ Set.Icc (I.a) (I.b),
+      p₂ (x) = c * p₁ (x) ∧ q₂ (x) = c * q₁ (x) ∧ w₂ (x) = c * w₁ (x) := by
+  -- TODO: prove.
+  sorry
+
 end InverseProblem
 
 end MathPhysicsTheory.SturmLiouville
