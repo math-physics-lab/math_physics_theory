@@ -5,6 +5,7 @@ public import MathPhysicsTheory.BoundaryConditions.Robin
 public import MathPhysicsTheory.SturmLiouville.Eigenvalues
 public import MathPhysicsTheory.SturmLiouville.Operator
 public import MathPhysicsTheory.SturmLiouville.Problem
+public import MathPhysicsTheory.SturmLiouville.Uniqueness
 
 -- Linter: requires function arguments to be written in parentheses, `f (x)`.
 import MathPhysicsTheory.Linter.ArgParens
@@ -116,8 +117,27 @@ theorem solution_unique (I : InverseProblem) {p₁ q₁ p₂ q₂ w₁ w₂ : �
     (h₂ : I.IsSolution ({ p := p₂, q := q₂ }) (w₂)) :
     ∃ c : ℝ, 0 < c ∧ ∀ x ∈ Set.Icc (I.a) (I.b),
       p₂ (x) = c * p₁ (x) ∧ q₂ (x) = c * q₁ (x) ∧ w₂ (x) = c * w₁ (x) := by
-  -- TODO: prove.
-  sorry
+  obtain ⟨P, ha, hb, hBa, hBb, hev, hP⟩ := I.assumptions.exists_problem
+  have hlam : StrictMono (I.«λₙ») := by
+    rw [hev]
+    exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
+  have hX : ∀ n, ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Set.Icc (I.a) (I.b)) := fun n => by
+    have := (hP (n)).1.1
+    rwa [ha, hb] at this
+  have hne : ∀ n, ∃ x ∈ Set.Icc (I.a) (I.b), I.Xₙ (n) (x) ≠ 0 := fun n => by
+    have := (hP (n)).2
+    rwa [ha, hb] at this
+  have hc : ∀ {p q w : ℝ → ℝ}, I.IsSolution ({ p := p, q := q }) (w) →
+      RegularCoeffs (I.a) (I.b) (p) (q) (w) := fun h =>
+    { p_pos := h.1.p_pos
+      w_pos := h.1.w_pos
+      p_contDiffOn := h.1.p_contDiffOn
+      q_continuousOn := h.1.q_continuousOn
+      w_continuousOn := h.1.w_continuousOn }
+  have hs : ∀ {p q w : ℝ → ℝ}, I.IsSolution ({ p := p, q := q }) (w) →
+      ∀ n, ODESolution (I.a) (I.b) (p) (q) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun h n =>
+    ⟨hX (n), fun x hx => h.2 (n) (x) (hx)⟩
+  exact proportional_of_eigenpairs (I.a_lt_b) (hc (h₁)) (hc (h₂)) (hlam) (hs (h₁)) (hs (h₂)) (hne)
 
 end InverseProblem
 

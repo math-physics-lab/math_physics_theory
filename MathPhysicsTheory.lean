@@ -9,6 +9,7 @@ public import MathPhysicsTheory.SturmLiouville.Eigenvalues
 public import MathPhysicsTheory.SturmLiouville.InverseProblem
 public import MathPhysicsTheory.SturmLiouville.Operator
 public import MathPhysicsTheory.SturmLiouville.Problem
+public import MathPhysicsTheory.SturmLiouville.Uniqueness
 
 -- Linter: requires function arguments to be written in parentheses, `f (x)`.
 import MathPhysicsTheory.Linter.ArgParens
