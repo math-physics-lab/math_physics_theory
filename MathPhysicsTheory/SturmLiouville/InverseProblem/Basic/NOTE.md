@@ -1,6 +1,6 @@
-## Solving the inverse problem: a reconstruction scheme
+## Solving the inverse problem: a solution method
 
-### The scheme in general form
+### The method in general form
 
 **Data.** An interval $[a,b]$, Robin (e.g. Dirichlet) boundary conditions, eigenvalues $\lambda_0<\lambda_1<\lambda_2<\cdots$ and eigenfunctions $X_n\in C^2[a,b]$, $X_n\not\equiv 0$. They are the eigenpairs of some Sturm-Liouville problem.
 
