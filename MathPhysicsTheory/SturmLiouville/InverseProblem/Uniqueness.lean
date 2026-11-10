@@ -32,7 +32,7 @@ namespace MathPhysicsTheory.SturmLiouville.InverseProblem
 section Lemmas
 
 /-- `p` is differentiable at interior points. -/
-theorem differentiableAt_p {a b : ℝ} {L : Operator} {w : ℝ → ℝ}
+private theorem differentiableAt_p {a b : ℝ} {L : Operator} {w : ℝ → ℝ}
     {Ba Bb : BoundaryConditions.Robin.Operator}
     (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb)) {x : ℝ} (hx : x ∈ Ioo (a) (b)) :
     DifferentiableAt (ℝ) (L.p) (x) :=
@@ -43,7 +43,7 @@ variable {a b : ℝ} {L L₁ L₂ : Operator} {w w₁ w₂ : ℝ → ℝ} {l : �
 
 /-- At an interior point, `y` is differentiable and the flux `p y'` has derivative
 `-(q + λ w) y`. -/
-theorem solution_hasDerivAt
+private theorem solution_hasDerivAt
     (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x : ℝ} (hx : x ∈ Ioo (a) (b)) :
     HasDerivAt (y) (deriv (y) (x)) (x) ∧
@@ -66,7 +66,7 @@ theorem solution_hasDerivAt
 
 /-- Uniqueness for the Cauchy problem: a solution with `y (x₁) = 0` and `y' (x₁) = 0` at an interior
 point `x₁` vanishes on all of `[a, b]`. -/
-theorem eq_zero_of_cauchy (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
+private theorem eq_zero_of_cauchy (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x₁ : ℝ} (hx₁ : x₁ ∈ Ioo (a) (b))
     (h0 : y (x₁) = 0) (h1 : deriv (y) (x₁) = 0) : ∀ x ∈ Icc (a) (b), y (x) = 0 := by
   have hab : a < b := hx₁.1.trans (hx₁.2)
@@ -167,7 +167,7 @@ private theorem relation (hA₁ : SturmLiouville.Assumptions (a) (b) (L₁) (w�
 
 /-- The logarithmic flux `m = L.p y' / y` satisfies the Riccati equation
 `m' = -(L.q + λ w) - m² / L.p` where `y ≠ 0`. -/
-theorem hasDerivAt_ratio (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
+private theorem hasDerivAt_ratio (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x : ℝ} (hx : x ∈ Ioo (a) (b))
     (hy : y (x) ≠ 0) :
     HasDerivAt (fun t => L.p (t) * deriv (y) (t) / y (t))
@@ -197,7 +197,7 @@ private theorem eq_zero_of_mul_eq_zero (hA : SturmLiouville.Assumptions (a) (b) 
 
 /-- The algebraic core of the uniqueness argument: if the ratios `uₙ` satisfy the Riccati equation
 for three distinct eigenvalues `l₀ < l₁ < l₂` and are affine in `λ`, then `u₁ = u₀`. -/
-theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (h₀₁ : l₀ < l₁)
+private theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (h₀₁ : l₀ < l₁)
     (h₁₂ : l₁ < l₂)
     (H : (l₁ - l₀) * (u₂ - u₀) = (l₂ - l₀) * (u₁ - u₀))
     (E : (l₁ - l₀) * ((-(q + l₂ * w) - u₂ ^ 2 / P) - (-(q + l₀ * w) - u₀ ^ 2 / P)) =
@@ -219,51 +219,6 @@ theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (
     · exact h
   have := pow_eq_zero_iff (two_ne_zero) |>.mp this
   linarith
-
-/-- Collinear flux ratios contradict `w > 0`: if `mₙ` satisfy the Riccati equation
-`mₙ' = -(L.q + λₙ w) - mₙ² / L.p` on a nonempty open set `U ⊆ (a, b)` for three increasing
-eigenvalues `λ₀ < λ₁ < λ₂`, then `m₀, m₁, m₂` cannot be affine in `λₙ` on all of `U`. -/
-theorem false_of_collinear {lam : ℕ → ℝ}
-    (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb)) (hlam : StrictMono (lam))
-    {U : Set (ℝ)} (hUo : IsOpen (U)) (hUI : U ⊆ Ioo (a) (b)) (hUne : U.Nonempty)
-    (m : ℕ → ℝ → ℝ)
-    (hmd : ∀ n, n < 3 → ∀ x ∈ U, HasDerivAt (m (n))
-      (-(L.q (x) + lam (n) * w (x)) - (m (n) (x)) ^ 2 / L.p (x)) (x))
-    (hprop : ∀ x ∈ U, (lam (1) - lam (0)) * (m (2) (x) - m (0) (x)) =
-      (lam (2) - lam (0)) * (m (1) (x) - m (0) (x))) : False := by
-  have hp : ∀ x ∈ U, 0 < L.p (x) := fun x hx => hA.p_pos (x) (Ioo_subset_Icc_self (hUI (hx)))
-  obtain ⟨x₀, hx₀U⟩ := hUne
-  have hd1 : ∀ x ∈ U, m (1) (x) = m (0) (x) := by
-    intro x hx
-    have H1 : HasDerivAt (fun t => (lam (1) - lam (0)) * (m (2) (t) - m (0) (t)))
-        ((lam (1) - lam (0)) * ((-(L.q (x) + lam (2) * w (x)) - (m (2) (x)) ^ 2 / L.p (x)) -
-          (-(L.q (x) + lam (0) * w (x)) - (m (0) (x)) ^ 2 / L.p (x)))) (x) :=
-      ((hmd (2) (by norm_num) (x) (hx)).sub (hmd (0) (by norm_num) (x) (hx))).const_mul (_)
-    have H2 : HasDerivAt (fun t => (lam (2) - lam (0)) * (m (1) (t) - m (0) (t)))
-        ((lam (2) - lam (0)) * ((-(L.q (x) + lam (1) * w (x)) - (m (1) (x)) ^ 2 / L.p (x)) -
-          (-(L.q (x) + lam (0) * w (x)) - (m (0) (x)) ^ 2 / L.p (x)))) (x) :=
-      ((hmd (1) (by norm_num) (x) (hx)).sub (hmd (0) (by norm_num) (x) (hx))).const_mul (_)
-    have hev : (fun t => (lam (1) - lam (0)) * (m (2) (t) - m (0) (t))) =ᶠ[nhds (x)]
-        (fun t => (lam (2) - lam (0)) * (m (1) (t) - m (0) (t))) := by
-      filter_upwards [hUo.mem_nhds (hx)] with t ht using hprop (t) (ht)
-    have E := H1.unique (H2.congr_of_eventuallyEq (hev))
-    exact ratio_algebra (hp (x) (hx)) (hlam (by norm_num)) (hlam (by norm_num))
-      (hprop (x) (hx)) (E)
-  -- Contradiction at `x₀`: `m 1 - m 0` vanishes near `x₀`, so its derivative vanishes, but the
-  -- Riccati equation gives `-(λ₁ - λ₀) w`.
-  have H3 : HasDerivAt (fun t => m (1) (t) - m (0) (t))
-      ((-(L.q (x₀) + lam (1) * w (x₀)) - (m (1) (x₀)) ^ 2 / L.p (x₀)) -
-        (-(L.q (x₀) + lam (0) * w (x₀)) - (m (0) (x₀)) ^ 2 / L.p (x₀))) (x₀) :=
-    (hmd (1) (by norm_num) (x₀) (hx₀U)).sub (hmd (0) (by norm_num) (x₀) (hx₀U))
-  have hev0 : (fun t => m (1) (t) - m (0) (t)) =ᶠ[nhds (x₀)] fun _ => 0 := by
-    filter_upwards [hUo.mem_nhds (hx₀U)] with t ht
-    simp [hd1 (t) (ht)]
-  have H4 := H3.unique ((hasDerivAt_const (x₀) (0 : ℝ)).congr_of_eventuallyEq (hev0))
-  rw [hd1 (x₀) (hx₀U)] at H4
-  have hw := (hA.w_pos (x₀) (Ioo_subset_Icc_self (hUI (hx₀U)))).ne'
-  have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by norm_num))).ne'
-  have : (lam (1) - lam (0)) * w (x₀) = 0 := by linarith
-  exact (mul_ne_zero (hl) (hw)) (this)
 
 /-- Core of the uniqueness proof: if two sets of coefficients `(L₁.p, L₁.q, w₁)` and
 `(L₂.p, L₂.q, w₂)` have the same three eigenpairs (with distinct eigenvalues), then `L₂.p / L₁.p`
@@ -317,8 +272,37 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
     apply mul_left_cancel₀ (hx.2)
     linear_combination (lam (1) - lam (0)) * (hrel (2) (x) (hx) - hrel (0) (x) (hx)) -
       (lam (2) - lam (0)) * (hrel (1) (x) (hx) - hrel (0) (x) (hx))
-  exact false_of_collinear (hA₁) (hlam) (hUopen) (fun x hx => hx.1) (⟨x₀, hx₀U⟩) (m)
-    (fun n _ => hmd (n)) (hprop)
+  have hd1 : ∀ x ∈ U, m (1) (x) = m (0) (x) := by
+    intro x hx
+    have H1 : HasDerivAt (fun t => (lam (1) - lam (0)) * (m (2) (t) - m (0) (t)))
+        ((lam (1) - lam (0)) * ((-(L₁.q (x) + lam (2) * w₁ (x)) - (m (2) (x)) ^ 2 / L₁.p (x)) -
+          (-(L₁.q (x) + lam (0) * w₁ (x)) - (m (0) (x)) ^ 2 / L₁.p (x)))) (x) :=
+      ((hmd (2) (x) (hx)).sub (hmd (0) (x) (hx))).const_mul (_)
+    have H2 : HasDerivAt (fun t => (lam (2) - lam (0)) * (m (1) (t) - m (0) (t)))
+        ((lam (2) - lam (0)) * ((-(L₁.q (x) + lam (1) * w₁ (x)) - (m (1) (x)) ^ 2 / L₁.p (x)) -
+          (-(L₁.q (x) + lam (0) * w₁ (x)) - (m (0) (x)) ^ 2 / L₁.p (x)))) (x) :=
+      ((hmd (1) (x) (hx)).sub (hmd (0) (x) (hx))).const_mul (_)
+    have hev : (fun t => (lam (1) - lam (0)) * (m (2) (t) - m (0) (t))) =ᶠ[nhds (x)]
+        (fun t => (lam (2) - lam (0)) * (m (1) (t) - m (0) (t))) := by
+      filter_upwards [hUopen.mem_nhds (hx)] with t ht using hprop (t) (ht)
+    have E := H1.unique (H2.congr_of_eventuallyEq (hev))
+    exact ratio_algebra (hp (x) (hx.1)) (hlam (by norm_num)) (hlam (by norm_num))
+      (hprop (x) (hx)) (E)
+  -- Contradiction at `x₀`: `m 1 - m 0` vanishes near `x₀`, so its derivative vanishes, but the
+  -- Riccati equation gives `-(λ₁ - λ₀) w`.
+  have H3 : HasDerivAt (fun t => m (1) (t) - m (0) (t))
+      ((-(L₁.q (x₀) + lam (1) * w₁ (x₀)) - (m (1) (x₀)) ^ 2 / L₁.p (x₀)) -
+        (-(L₁.q (x₀) + lam (0) * w₁ (x₀)) - (m (0) (x₀)) ^ 2 / L₁.p (x₀))) (x₀) :=
+    (hmd (1) (x₀) (hx₀U)).sub (hmd (0) (x₀) (hx₀U))
+  have hev0 : (fun t => m (1) (t) - m (0) (t)) =ᶠ[nhds (x₀)] fun _ => 0 := by
+    filter_upwards [hUopen.mem_nhds (hx₀U)] with t ht
+    simp [hd1 (t) (ht)]
+  have H4 := H3.unique ((hasDerivAt_const (x₀) (0 : ℝ)).congr_of_eventuallyEq (hev0))
+  rw [hd1 (x₀) (hx₀U)] at H4
+  have hw := (hA₁.w_pos (x₀) (Ioo_subset_Icc_self (hx₀))).ne'
+  have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by norm_num))).ne'
+  have : (lam (1) - lam (0)) * w₁ (x₀) = 0 := by linarith
+  exact (mul_ne_zero (hl) (hw)) (this)
 
 /-- Two sets of coefficients with the same three eigenpairs (distinct eigenvalues) are proportional
 on `[a, b]` by a positive constant. -/
