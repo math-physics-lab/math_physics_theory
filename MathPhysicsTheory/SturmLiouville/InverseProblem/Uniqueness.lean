@@ -1,7 +1,7 @@
 module
 
 public import Mathlib
-public import MathPhysicsTheory.SturmLiouville.InverseProblem.Basic
+public import MathPhysicsTheory.SturmLiouville.Problem
 
 -- Linter: requires function arguments to be written in parentheses, `f (x)`.
 import MathPhysicsTheory.Linter.ArgParens
@@ -9,8 +9,8 @@ import MathPhysicsTheory.Linter.ArgParens
 /-!
 # Uniqueness of the inverse Sturm-Liouville problem
 
-A solution `(p, q, w)` of an inverse problem is unique up to a positive constant factor
-(`InverseProblem.solution_unique`).
+Lemmas for `InverseProblem.solution_unique`: a solution `(p, q, w)` of an inverse problem is unique
+up to a positive constant factor. The main result here is `proportional_of_eigenpairs`.
 
 The proof compares two solutions `(p₁, q₁, w₁)` and `(p₂, q₂, w₂)` that have the same eigenpairs.
 With `c = p₂ / p₁`, eliminating `Xₙ''` from the two equations gives, for every `n`,
@@ -306,7 +306,7 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
 
 /-- Two sets of coefficients with the same three eigenpairs (distinct eigenvalues) are proportional
 on `[a, b]` by a positive constant. -/
-private theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ}
+theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ}
     (hA₁ : SturmLiouville.Assumptions (a) (b) (L₁) (w₁) (Ba) (Bb))
     (hA₂ : SturmLiouville.Assumptions (a) (b) (L₂) (w₂) (Ba) (Bb))
     (hlam : StrictMono (lam))
@@ -379,35 +379,6 @@ private theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X 
     hext (hA₂.w_continuousOn) (hA₁.w_continuousOn) (hw) (x) (hx)⟩⟩
 
 end Lemmas
-
-/-- Uniqueness up to a constant factor: two solutions `(p₁, q₁, w₁)` and `(p₂, q₂, w₂)` of the same
-inverse problem differ by a positive constant `c`, that is `p₂ = c p₁`, `q₂ = c q₁` and
-`w₂ = c w₁` on `[a, b]`.
-
-The factor cannot be removed: the equation `(p Xₙ')' + q Xₙ + λₙ w Xₙ = 0` is linear in
-`(p, q, w)`, so `(c p, c q, c w)` is a solution whenever `(p, q, w)` is, and `c > 0` keeps `p` and
-`w` positive. Fixing the scale, for example `p (a)`, makes the solution unique. -/
-theorem solution_unique (I : InverseProblem) {p₁ q₁ p₂ q₂ w₁ w₂ : ℝ → ℝ}
-    (h₁ : I.IsSolution ({ p := p₁, q := q₁ }) (w₁))
-    (h₂ : I.IsSolution ({ p := p₂, q := q₂ }) (w₂)) :
-    ∃ c : ℝ, 0 < c ∧ ∀ x ∈ Set.Icc (I.a) (I.b),
-      p₂ (x) = c * p₁ (x) ∧ q₂ (x) = c * q₁ (x) ∧ w₂ (x) = c * w₁ (x) := by
-  obtain ⟨P, ha, hb, hBa, hBb, hev, hP⟩ := I.assumptions.exists_problem
-  have hlam : StrictMono (I.«λₙ») := by
-    rw [hev]
-    exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
-  have hX : ∀ n, ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Set.Icc (I.a) (I.b)) := fun n => by
-    have := (hP (n)).1.1.1
-    rwa [ha, hb] at this
-  have hne : ∀ n, ∃ x ∈ Set.Icc (I.a) (I.b), I.Xₙ (n) (x) ≠ 0 := fun n => by
-    have := (hP (n)).2
-    rwa [ha, hb] at this
-  have hs : ∀ {L : Operator} {w : ℝ → ℝ}, I.IsSolution (L) (w) → ∀ n,
-      L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun h n =>
-    ⟨hX (n), fun x hx => by
-      have := h.2 (n) (x) (hx)
-      linear_combination this⟩
-  exact proportional_of_eigenpairs (I.a_lt_b) (h₁.1) (h₂.1) (hlam) (hs (h₁)) (hs (h₂)) (hne)
 
 end InverseProblem
 
