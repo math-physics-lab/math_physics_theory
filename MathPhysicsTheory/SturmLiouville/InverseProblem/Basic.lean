@@ -4,6 +4,7 @@ public import Mathlib
 public import MathPhysicsTheory.BoundaryConditions.Robin
 public import MathPhysicsTheory.SturmLiouville.Eigenvalues
 public import MathPhysicsTheory.SturmLiouville.Operator
+public import MathPhysicsTheory.SturmLiouville.InverseProblem.Uniqueness
 public import MathPhysicsTheory.SturmLiouville.Problem
 
 -- Linter: requires function arguments to be written in parentheses, `f (x)`.
@@ -34,6 +35,9 @@ The given eigenpairs must come from a Sturm-Liouville problem. This is recorded 
 whose ordered eigenvalues are the `λₙ` and which has `Xₙ` as the eigenfunction for each `λₙ`. The
 properties of eigenpairs (`0 ≤ λ₀ < λ₁ < ⋯`, `λₙ → +∞`, the boundary conditions on `Xₙ`, `n` zeros
 of `Xₙ`) then follow from the theorems in `MathPhysicsTheory.SturmLiouville.Eigenvalues`.
+
+The solution is unique up to a positive constant factor (`solution_unique`); the lemmas for its
+proof are in `MathPhysicsTheory.SturmLiouville.InverseProblem.Uniqueness`.
 
 ## References
 
@@ -101,7 +105,7 @@ theorem exists_solution (I : InverseProblem) :
     exact hA
   · intro n x hx
     have hx' : x ∈ Set.Icc (P.a) (P.b) := by rwa [ha, hb]
-    have := (hP (n)).1.2.1 (x) (hx')
+    have := (hP (n)).1.1.2 (x) (hx')
     linarith
 
 /-- Uniqueness up to a constant factor: two solutions `(p₁, q₁, w₁)` and `(p₂, q₂, w₂)` of the same
@@ -116,8 +120,22 @@ theorem solution_unique (I : InverseProblem) {p₁ q₁ p₂ q₂ w₁ w₂ : �
     (h₂ : I.IsSolution ({ p := p₂, q := q₂ }) (w₂)) :
     ∃ c : ℝ, 0 < c ∧ ∀ x ∈ Set.Icc (I.a) (I.b),
       p₂ (x) = c * p₁ (x) ∧ q₂ (x) = c * q₁ (x) ∧ w₂ (x) = c * w₁ (x) := by
-  -- TODO: prove.
-  sorry
+  obtain ⟨P, ha, hb, hBa, hBb, hev, hP⟩ := I.assumptions.exists_problem
+  have hlam : StrictMono (I.«λₙ») := by
+    rw [hev]
+    exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
+  have hX : ∀ n, ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Set.Icc (I.a) (I.b)) := fun n => by
+    have := (hP (n)).1.1.1
+    rwa [ha, hb] at this
+  have hne : ∀ n, ∃ x ∈ Set.Icc (I.a) (I.b), I.Xₙ (n) (x) ≠ 0 := fun n => by
+    have := (hP (n)).2
+    rwa [ha, hb] at this
+  have hs : ∀ {L : Operator} {w : ℝ → ℝ}, I.IsSolution (L) (w) → ∀ n,
+      L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun h n =>
+    ⟨hX (n), fun x hx => by
+      have := h.2 (n) (x) (hx)
+      linear_combination this⟩
+  exact proportional_of_eigenpairs (I.a_lt_b) (h₁.1) (h₂.1) (hlam) (hs (h₁)) (hs (h₂)) (hne)
 
 end InverseProblem
 

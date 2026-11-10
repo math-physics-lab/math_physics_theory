@@ -53,8 +53,8 @@ noncomputable def dirichlet : Problem where
     Bb_mul_nonneg := by simp }
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  refine ⟨Real.contDiff_sin.contDiffOn, ?_⟩
-  simp [dirichlet, Operator.apply, Dirichlet.Operator.satisfies_iff]
+  refine ⟨⟨Real.contDiff_sin.contDiffOn, ?_⟩, ?_⟩ <;>
+    simp [dirichlet, Operator.apply, Dirichlet.Operator.satisfies_iff]
 
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
   simp [dirichlet, Problem.IsSolution, Dirichlet.Operator.satisfies_iff]
@@ -119,21 +119,25 @@ structure Problem where
   /-- The assumptions on the coefficients and boundary operators. -/
   assumptions : Assumptions (a) (b) (L) (w) (Ba) (Bb)
 
+/-- `y` solves the equation `L y = -λ w y` on `[a, b]`: `y` is twice continuously differentiable on
+`[a, b]` and `L y = -λ w y` there. -/
+def Operator.IsSolution (L : Operator) (a b : ℝ) (w : ℝ → ℝ) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
+  ContDiffOn (ℝ) (2) (y) (Set.Icc (a) (b)) ∧
+    ∀ x ∈ Set.Icc (a) (b), L.apply (y) (x) = -«λ» * w (x) * y (x)
+
 namespace Problem
 
-/-- `y` solves the problem with parameter `λ`: `y` is twice continuously differentiable on
-`[a, b]`, `L y = -λ w y` on `[a, b]`, `Ba y = 0` and `Bb y = 0`. -/
+/-- `y` solves the problem with parameter `λ`: `y` solves `L y = -λ w y` on `[a, b]` (see
+`Operator.IsSolution`), `Ba y = 0` and `Bb y = 0`. -/
 def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
-  ContDiffOn (ℝ) (2) (y) (Set.Icc (P.a) (P.b)) ∧
-  (∀ x ∈ Set.Icc (P.a) (P.b), P.L.apply (y) (x) = -«λ» * P.w (x) * y (x)) ∧
-    P.Ba.Satisfies (0) (y) ∧ P.Bb.Satisfies (0) (y)
+  P.L.IsSolution (P.a) (P.b) (P.w) («λ») (y) ∧ P.Ba.Satisfies (0) (y) ∧ P.Bb.Satisfies (0) (y)
 
 /-- The trivial solution: `y = 0` solves every Sturm-Liouville problem, for every `λ`. -/
 theorem isSolution_zero (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
   intro «λ»
-  refine ⟨contDiffOn_const, ?_⟩
-  simp [Operator.apply, BoundaryConditions.Robin.Operator.Satisfies,
-    BoundaryConditions.Robin.Operator.apply]
+  refine ⟨⟨contDiffOn_const, ?_⟩, ?_⟩ <;>
+    simp [Operator.apply, BoundaryConditions.Robin.Operator.Satisfies,
+      BoundaryConditions.Robin.Operator.apply]
 
 end Problem
 
