@@ -398,7 +398,7 @@ lemma continuousOn_γ (hS : I.IsSolution (L) (w)) :
 
 /-- Step 5. At every interior point, `α` is the limit of `A / D` along the points where
 `D ≠ 0`. -/
-lemma tendsto_α (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
+lemma tendsto_α (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (0) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (α (L) (x))) := by
@@ -407,7 +407,7 @@ lemma tendsto_α (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
   exact tendsto_of_eq_cramer (0) (fun y hy => α_eq_cramer (hS) (hy.1) (hy.2)) (hc)
 
 /-- Step 5, for `β` and `B / D`. -/
-lemma tendsto_β (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
+lemma tendsto_β (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (1) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (β (L) (x))) := by
@@ -415,7 +415,7 @@ lemma tendsto_β (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
     ((continuousOn_β (hS)) (x) (Ioo_subset_Icc_self (hx)))
 
 /-- Step 5, for `γ` and `G / D`. -/
-lemma tendsto_γ (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
+lemma tendsto_γ (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (2) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (γ (L) (w) (x))) := by
@@ -427,7 +427,7 @@ lemma ratioLimit_zero_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : 
     (hx : x ∈ Ioo (I.a) (I.b)) : ratioLimit (I) (e) (0) (x) = α (L) (x) := by
   have hne : NeBot (𝓝[regularSet (I) (e)] (x)) :=
     mem_closure_iff_nhdsWithin_neBot.mp (closure_regularSet (he) (hx))
-  exact (tendsto_α (hS) (he) (hx)).limUnder_eq
+  exact (tendsto_α (hS) (hx)).limUnder_eq
 
 /-- Step 5. Hence `ratioLimit 1` recovers `β`, also at the endpoints: `β = q/p` is continuous
 on all of `[a, b]`. -/
