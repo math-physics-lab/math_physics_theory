@@ -372,36 +372,21 @@ lemma tendsto_of_eq_cramer (k : Fin (3)) {g : ℝ → ℝ}
   refine h.congr' (?_)
   filter_upwards [self_mem_nhdsWithin] with y hy using hg (y) (hy)
 
-/-- `α = p'/p` is continuous at interior points. -/
-lemma continuousAt_α (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
-    ContinuousAt (α (L)) (x) := by
-  have hcd : ContDiffOn (ℝ) (1) (L.p) (Ioo (I.a) (I.b)) :=
-    hS.1.p_contDiffOn.mono (Ioo_subset_Icc_self)
-  have h1 : ContinuousOn (deriv (L.p)) (Ioo (I.a) (I.b)) :=
-    hcd.continuousOn_deriv_of_isOpen (isOpen_Ioo) (le_rfl)
-  have h2 : ContinuousAt (L.p) (x) := (differentiableAt_p (hS.1) (hx)).continuousAt
-  exact (h1.continuousAt (isOpen_Ioo.mem_nhds (hx))).div (h2)
-    ((hS.1.p_pos (x) (Ioo_subset_Icc_self (hx))).ne')
-
-/-- `β = q/p` is continuous on `[a, b]`. -/
-lemma continuousOn_β (hS : I.IsSolution (L) (w)) : ContinuousOn (β (L)) (Icc (I.a) (I.b)) :=
-  hS.1.q_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
-    (fun x hx => (hS.1.p_pos (x) (hx)).ne')
-
-/-- `γ = w/p` is continuous on `[a, b]`. -/
-lemma continuousOn_γ (hS : I.IsSolution (L) (w)) :
-    ContinuousOn (γ (L) (w)) (Icc (I.a) (I.b)) :=
-  hS.1.w_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
-    (fun x hx => (hS.1.p_pos (x) (hx)).ne')
-
 /-- Step 5. At every interior point, `α` is the limit of `A / D` along the points where
 `D ≠ 0`. -/
 lemma tendsto_α (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (0) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (α (L) (x))) := by
-  have hc : ContinuousWithinAt (α (L)) (Icc (I.a) (I.b)) (x) :=
-    (continuousAt_α (hS) (hx)).continuousWithinAt
+  -- `α = p'/p` is continuous at interior points
+  have hc : ContinuousWithinAt (α (L)) (Icc (I.a) (I.b)) (x) := by
+    have hcd : ContDiffOn (ℝ) (1) (L.p) (Ioo (I.a) (I.b)) :=
+      hS.1.p_contDiffOn.mono (Ioo_subset_Icc_self)
+    have h1 : ContinuousOn (deriv (L.p)) (Ioo (I.a) (I.b)) :=
+      hcd.continuousOn_deriv_of_isOpen (isOpen_Ioo) (le_rfl)
+    have h2 : ContinuousAt (L.p) (x) := (differentiableAt_p (hS.1) (hx)).continuousAt
+    exact ((h1.continuousAt (isOpen_Ioo.mem_nhds (hx))).div (h2)
+      ((hS.1.p_pos (x) (Ioo_subset_Icc_self (hx))).ne')).continuousWithinAt
   exact tendsto_of_eq_cramer (0) (fun y hy => α_eq_cramer (hS) (hy.1) (hy.2)) (hc)
 
 /-- Step 5, for `β` and `B / D`. -/
@@ -409,16 +394,24 @@ lemma tendsto_β (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (1) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (β (L) (x))) := by
+  -- `β = q/p` is continuous on `[a, b]`
+  have hc : ContinuousOn (β (L)) (Icc (I.a) (I.b)) :=
+    hS.1.q_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
+      (fun x hx => (hS.1.p_pos (x) (hx)).ne')
   exact tendsto_of_eq_cramer (1) (fun y hy => β_eq_cramer (hS) (hy.1) (hy.2))
-    ((continuousOn_β (hS)) (x) (Ioo_subset_Icc_self (hx)))
+    (hc (x) (Ioo_subset_Icc_self (hx)))
 
 /-- Step 5, for `γ` and `G / D`. -/
 lemma tendsto_γ (hS : I.IsSolution (L) (w)) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (e) (2) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (γ (L) (w) (x))) := by
+  -- `γ = w/p` is continuous on `[a, b]`
+  have hc : ContinuousOn (γ (L) (w)) (Icc (I.a) (I.b)) :=
+    hS.1.w_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
+      (fun x hx => (hS.1.p_pos (x) (hx)).ne')
   exact tendsto_of_eq_cramer (2) (fun y hy => γ_eq_cramer (hS) (hy.1) (hy.2))
-    ((continuousOn_γ (hS)) (x) (Ioo_subset_Icc_self (hx)))
+    (hc (x) (Ioo_subset_Icc_self (hx)))
 
 /-- Step 5. Hence `ratioLimit 0` recovers `α` at interior points. -/
 lemma ratioLimit_zero_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
@@ -433,8 +426,12 @@ lemma ratioLimit_one_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : �
     (hx : x ∈ Icc (I.a) (I.b)) : ratioLimit (I) (e) (1) (x) = β (L) (x) := by
   have hne : NeBot (𝓝[regularSet (I) (e)] (x)) :=
     mem_closure_iff_nhdsWithin_neBot.mp (Icc_subset_closure_regularSet (he) (hx))
+  -- `β = q/p` is continuous on `[a, b]`
+  have hc : ContinuousOn (β (L)) (Icc (I.a) (I.b)) :=
+    hS.1.q_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
+      (fun x hx => (hS.1.p_pos (x) (hx)).ne')
   exact (tendsto_of_eq_cramer (1) (fun y hy => β_eq_cramer (hS) (hy.1) (hy.2))
-    ((continuousOn_β (hS)) (x) (hx))).limUnder_eq
+    (hc (x) (hx))).limUnder_eq
 
 /-- Step 5. Hence `ratioLimit 2` recovers `γ`, also at the endpoints: `γ = w/p` is continuous
 on all of `[a, b]`. -/
@@ -442,8 +439,12 @@ lemma ratioLimit_two_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : �
     (hx : x ∈ Icc (I.a) (I.b)) : ratioLimit (I) (e) (2) (x) = γ (L) (w) (x) := by
   have hne : NeBot (𝓝[regularSet (I) (e)] (x)) :=
     mem_closure_iff_nhdsWithin_neBot.mp (Icc_subset_closure_regularSet (he) (hx))
+  -- `γ = w/p` is continuous on `[a, b]`
+  have hc : ContinuousOn (γ (L) (w)) (Icc (I.a) (I.b)) :=
+    hS.1.w_continuousOn.div (hS.1.p_contDiffOn.continuousOn)
+      (fun x hx => (hS.1.p_pos (x) (hx)).ne')
   exact (tendsto_of_eq_cramer (2) (fun y hy => γ_eq_cramer (hS) (hy.1) (hy.2))
-    ((continuousOn_γ (hS)) (x) (hx))).limUnder_eq
+    (hc (x) (hx))).limUnder_eq
 
 /-! ### Step 6: recover `p` by one integration -/
 
