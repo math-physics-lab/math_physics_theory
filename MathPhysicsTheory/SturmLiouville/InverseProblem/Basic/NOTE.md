@@ -1,4 +1,4 @@
-## Solving the inverse problem: a reconstruction method
+## Solving the inverse problem: a solution method
 
 ### The method in general form
 
