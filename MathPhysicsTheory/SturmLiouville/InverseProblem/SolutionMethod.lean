@@ -265,7 +265,10 @@ lemma pRec_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
 /-- Step 7. `q = p β`: `qRec = q / p (a)`. -/
 lemma qRec_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
     (hx : x ∈ Icc (I.a) (I.b)) : qRec (I) (e) (x) = L.q (x) / L.p (I.a) := by
-  sorry
+  have hpx : 0 < L.p (x) := hS.1.p_pos (x) (hx)
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  rw [qRec, pRec_eq (hS) (he) (hx), ratioLimit_one_eq (hS) (he) (hx), β]
+  field_simp
 
 /-- Step 7. `w = p γ`: `wRec = w / p (a)`. -/
 lemma wRec_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
@@ -280,7 +283,10 @@ lemma check_eigenpair (he : StrictMono (e)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo 
     deriv (deriv (I.Xₙ (n))) (x) + ratioLimit (I) (e) (0) (x) * deriv (I.Xₙ (n)) (x) +
       ratioLimit (I) (e) (1) (x) * I.Xₙ (n) (x) +
       I.«λₙ» (n) * ratioLimit (I) (e) (2) (x) * I.Xₙ (n) (x) = 0 := by
-  sorry
+  obtain ⟨L, w, hS⟩ := I.exists_solution
+  rw [ratioLimit_zero_eq (hS) (he) (hx), ratioLimit_one_eq (hS) (he) (Ioo_subset_Icc_self (hx)),
+    ratioLimit_two_eq (hS) (he) (Ioo_subset_Icc_self (hx))]
+  exact linear_equation (hS) (n) (hx)
 
 /-! ### Step 9: the recovered triple solves the inverse problem -/
 
