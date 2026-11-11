@@ -356,10 +356,6 @@ lemma Icc_subset_closure_regularSet (he : StrictMono (e)) :
         closure_mono (closure_regularSet (he))
     _ = closure (regularSet (I) (e)) := closure_closure
 
-/-- `regularSet` lies in `[a, b]`. -/
-lemma regularSet_subset_Icc : regularSet (I) (e) ⊆ Icc (I.a) (I.b) :=
-  fun _ hx => Ioo_subset_Icc_self (hx.1)
-
 /-- If `g` agrees with `A / D` on the regular set and is continuous within `[a, b]` at `x`, then
 `A / D → g x` along the regular set. -/
 lemma tendsto_of_eq_cramer (k : Fin (3)) {g : ℝ → ℝ}
@@ -367,8 +363,10 @@ lemma tendsto_of_eq_cramer (k : Fin (3)) {g : ℝ → ℝ}
     (hc : ContinuousWithinAt (g) (Icc (I.a) (I.b)) (x)) :
     Tendsto (fun y => cramerNum (I) (e) (k) (y) / D (I) (e) (y))
       (𝓝[regularSet (I) (e)] (x)) (𝓝 (g (x))) := by
+  -- `regularSet` lies in `[a, b]`
+  have hsub : regularSet (I) (e) ⊆ Icc (I.a) (I.b) := fun _ hx => Ioo_subset_Icc_self (hx.1)
   have h : Tendsto (g) (𝓝[regularSet (I) (e)] (x)) (𝓝 (g (x))) :=
-    (hc.mono (regularSet_subset_Icc)).tendsto
+    (hc.mono (hsub)).tendsto
   refine h.congr' (?_)
   filter_upwards [self_mem_nhdsWithin] with y hy using hg (y) (hy)
 
