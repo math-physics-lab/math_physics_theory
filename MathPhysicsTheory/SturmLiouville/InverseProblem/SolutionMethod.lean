@@ -10,7 +10,8 @@ import MathPhysicsTheory.Linter.ArgParens
 # A solution method for the inverse Sturm-Liouville problem
 
 Statements and proofs for the solution method described in `InverseProblem/Basic/NOTE.md`.
-Steps 1 to 6 are proved. Every `sorry` below (steps 7 to 9) is a lemma still to be proved.
+Steps 1 to 8 are proved, and so is the first half of step 9. The `sorry` below
+(`eq_recSolution`) is a lemma still to be proved.
 
 Given the eigenpairs `(λₙ, Xₙ)` of an inverse problem `I`, the method finds `(p, q, w)` using only
 three of them, `n = e 0 < e 1 < e 2`. They need not be the first three: `e : Fin 3 → ℕ` is any
@@ -209,11 +210,16 @@ lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : 
     obtain ⟨P, -, -, -, -, hev, -⟩ := I.assumptions.exists_problem
     rw [hev]
     exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
+  -- the given eigenfunctions are `C²` on `[a, b]`
+  have hX : ∀ n, ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := fun n => by
+    obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
+    have := (hP (n)).1.1.1
+    rwa [ha, hb] at this
   have hsubI : ∀ n, ContinuousOn (I.Xₙ (n)) (Ioo (I.a) (I.b)) := fun n =>
-    ((contDiffOn_Xₙ (I) (n)).continuousOn).mono (Ioo_subset_Icc_self)
+    ((hX (n)).continuousOn).mono (Ioo_subset_Icc_self)
   -- `Xₙ` solves the equation `L y = -λₙ w y` for the operator of a solution
   have hsol : ∀ n, L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun n =>
-    ⟨contDiffOn_Xₙ (I) (n), fun x hx => by
+    ⟨hX (n), fun x hx => by
       have := hS.2 (n) (x) (hx)
       linear_combination this⟩
   -- shrink to an open set on which a given eigenfunction does not vanish
@@ -511,11 +517,64 @@ lemma check_eigenpair (he : StrictMono (e)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo 
 
 /-! ### Step 9: the recovered triple solves the inverse problem -/
 
-/-- The method finds a solution: `(recOperator, wRec)` solves the inverse problem, and it is
+/-- Step 9. The recovered triple satisfies the `Assumptions` on `[a, b]`: on `[a, b]` it equals
+`(p, q, w) / p (a)` for a solution `(L, w)` (steps 6 and 7), and the assumptions are preserved by
+division by the positive constant `p (a)`. -/
+lemma recSolution_assumptions (he : StrictMono (e)) :
+    SturmLiouville.Assumptions (I.a) (I.b) (recOperator (I) (e)) (wRec (I) (e)) (I.Ba) (I.Bb) := by
+  obtain ⟨L, w, hS⟩ := I.exists_solution
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  have hp : ∀ x ∈ Icc (I.a) (I.b), pRec (I) (e) (x) = L.p (x) / L.p (I.a) :=
+    fun x hx => pRec_eq (hS) (he) (hx)
+  have hq : ∀ x ∈ Icc (I.a) (I.b), qRec (I) (e) (x) = L.q (x) / L.p (I.a) :=
+    fun x hx => qRec_eq (hS) (he) (hx)
+  have hw : ∀ x ∈ Icc (I.a) (I.b), wRec (I) (e) (x) = w (x) / L.p (I.a) :=
+    fun x hx => wRec_eq (hS) (he) (hx)
+  refine ⟨fun x hx => ?_, fun x hx => ?_, ?_, ?_, ?_, fun x hx => ?_, hS.1.Ba_c, hS.1.Bb_c,
+    hS.1.Ba_ne, hS.1.Bb_ne, hS.1.Ba_mul_nonpos, hS.1.Bb_mul_nonneg⟩
+  · change 0 < pRec (I) (e) (x)
+    rw [hp (x) (hx)]
+    exact div_pos (hS.1.p_pos (x) (hx)) (hpa)
+  · rw [hw (x) (hx)]
+    exact div_pos (hS.1.w_pos (x) (hx)) (hpa)
+  · exact (hS.1.p_contDiffOn.div_const (L.p (I.a))).congr (hp)
+  · exact (hS.1.q_continuousOn.div_const (L.p (I.a))).congr (hq)
+  · exact (hS.1.w_continuousOn.div_const (L.p (I.a))).congr (hw)
+  · change qRec (I) (e) (x) ≤ 0
+    rw [hq (x) (hx)]
+    exact div_nonpos_of_nonpos_of_nonneg (hS.1.q_nonpos (x) (hx)) (hpa.le)
+
+/-- Step 9. The recovered triple satisfies the equation `L Xₙ + λₙ w Xₙ = 0` for every `n` at
+interior points. (At the endpoints `deriv` of `pRec * Xₙ'` depends on how `pRec` is extended
+outside `[a, b]`, where it is not determined by the data, so no statement is made there.) -/
+lemma recSolution_equation (he : StrictMono (e)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+    (recOperator (I) (e)).apply (I.Xₙ (n)) (x) +
+      I.«λₙ» (n) * wRec (I) (e) (x) * I.Xₙ (n) (x) = 0 := by
+  obtain ⟨L, w, hS⟩ := I.exists_solution
+  have hx' : x ∈ Icc (I.a) (I.b) := Ioo_subset_Icc_self (hx)
+  -- near `x` the recovered `p` is `p / p (a)`
+  have hev : (fun t => pRec (I) (e) (t) * deriv (I.Xₙ (n)) (t)) =ᶠ[𝓝 (x)]
+      fun t => (L.p (t) * deriv (I.Xₙ (n)) (t)) / L.p (I.a) := by
+    filter_upwards [Icc_mem_nhds (hx.1) (hx.2)] with t ht
+    rw [pRec_eq (hS) (he) (ht)]
+    ring
+  have h := hS.2 (n) (x) (hx')
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  simp only [Operator.apply] at h ⊢
+  change deriv (fun t => pRec (I) (e) (t) * deriv (I.Xₙ (n)) (t)) (x) +
+    qRec (I) (e) (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * wRec (I) (e) (x) * I.Xₙ (n) (x) = 0
+  rw [hev.deriv_eq, deriv_div_const, qRec_eq (hS) (he) (hx'), wRec_eq (hS) (he) (hx')]
+  field_simp
+  linear_combination h
+
+/-- Step 9. The method finds a solution: `(recOperator, wRec)` satisfies the `Assumptions`, and
+the equation `L Xₙ + λₙ w Xₙ = 0` for every `n` at the interior points of `[a, b]`. It is
 normalised by `p (a) = 1`. -/
 lemma recSolution_isSolution (he : StrictMono (e)) :
-    I.IsSolution (recOperator (I) (e)) (wRec (I) (e)) := by
-  sorry
+    SturmLiouville.Assumptions (I.a) (I.b) (recOperator (I) (e)) (wRec (I) (e)) (I.Ba) (I.Bb) ∧
+      ∀ n, ∀ x ∈ Ioo (I.a) (I.b), (recOperator (I) (e)).apply (I.Xₙ (n)) (x) +
+        I.«λₙ» (n) * wRec (I) (e) (x) * I.Xₙ (n) (x) = 0 :=
+  ⟨recSolution_assumptions (he), fun n _ hx => recSolution_equation (he) (n) (hx)⟩
 
 /-- The recovered `p` is normalised: `p (a) = 1`. -/
 lemma pRec_left : pRec (I) (e) (I.a) = 1 := by
