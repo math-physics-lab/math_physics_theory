@@ -24,7 +24,7 @@ $$X_n'' + \alpha\,X_n' + \beta\,X_n + \lambda_n\gamma\,X_n = 0. \tag{1}$$
 
 #### Step 3. Take three eigenpairs and write the linear system
 
-Use $n=0,1,2$. At each point $x$:
+Take **any three** eigenpairs $n_0<n_1<n_2$; they need not be the first three. Below they are written as $n=0,1,2$ for brevity, so read $X_0,X_1,X_2$ as $X_{n_0},X_{n_1},X_{n_2}$ and likewise for $\lambda$. Only the fact that the three eigenvalues are distinct is used (step 5). At each point $x$:
 $$\underbrace{\begin{pmatrix} X_0' & X_0 & \lambda_0X_0\\ X_1' & X_1 & \lambda_1X_1\\ X_2' & X_2 & \lambda_2X_2\end{pmatrix}}_{M(x)} \begin{pmatrix}\alpha\\ \beta\\ \gamma\end{pmatrix} = \underbrace{\begin{pmatrix}-X_0''\\ -X_1''\\ -X_2''\end{pmatrix}}_{r(x)} . \tag{2}$$
 Three unknowns need three equations; each eigenpair gives one. (More eigenpairs add redundant equations, see step 8.)
 
@@ -116,7 +116,7 @@ A numerical run of steps 3-7 on a problem with genuinely variable $p,q,w$ ($p=1+
 
 ### Summary of the algorithm
 
-1. Take $(\lambda_n,X_n)$ for $n=0,1,2$ and compute $X_n',X_n''$.
+1. Take $(\lambda_n,X_n)$ for any three indices $n_0<n_1<n_2$ (e.g. $0,1,2$) and compute $X_n',X_n''$.
 2. Form $M(x)$ and $r(x)$ as in (2).
 3. Solve $M(\alpha,\beta,\gamma)^{T}=r$ (Cramer, or read off coordinates).
 4. $p=p(a)\exp\int_a^x\alpha$, $q=p\beta$, $w=p\gamma$.
