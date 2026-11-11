@@ -107,22 +107,6 @@ noncomputable def γ (L : Operator) (w : ℝ → ℝ) (x : ℝ) : ℝ :=
 variable {I} {e}
 variable {L : Operator} {w : ℝ → ℝ}
 
-/-- The given eigenfunctions are `C²` on `[a, b]`. -/
-lemma contDiffOn_Xₙ (I : InverseProblem) (n : ℕ) :
-    ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := by
-  obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
-  have := (hP (n)).1.1.1
-  rwa [ha, hb] at this
-
-/-- The derivative of an eigenfunction is differentiable at interior points. -/
-lemma differentiableAt_deriv_Xₙ (I : InverseProblem) (n : ℕ) {x : ℝ}
-    (hx : x ∈ Ioo (I.a) (I.b)) : DifferentiableAt (ℝ) (deriv (I.Xₙ (n))) (x) := by
-  have h2 : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Ioo (I.a) (I.b)) :=
-    (contDiffOn_Xₙ (I) (n)).mono (Ioo_subset_Icc_self)
-  have h3 : ContDiffOn (ℝ) (1) (deriv (I.Xₙ (n))) (Ioo (I.a) (I.b)) :=
-    h2.deriv_of_isOpen (isOpen_Ioo) (by norm_num)
-  exact (h3.contDiffAt (isOpen_Ioo.mem_nhds (hx))).differentiableAt (by norm_num)
-
 /-! ### Step 1: expand the operator -/
 
 /-- Step 1. At interior points `(p Xₙ')' = p Xₙ'' + p' Xₙ'`, so
@@ -131,9 +115,19 @@ lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.
     L.p (x) * deriv (deriv (I.Xₙ (n))) (x) + deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) +
       L.q (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0 := by
   have hp : DifferentiableAt (ℝ) (L.p) (x) := differentiableAt_p (hS.1) (hx)
+  have hC : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := by
+    obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
+    have := (hP (n)).1.1.1
+    rwa [ha, hb] at this
+  have hd : DifferentiableAt (ℝ) (deriv (I.Xₙ (n))) (x) := by
+    have h2 : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Ioo (I.a) (I.b)) :=
+      hC.mono (Ioo_subset_Icc_self)
+    have h3 : ContDiffOn (ℝ) (1) (deriv (I.Xₙ (n))) (Ioo (I.a) (I.b)) :=
+      h2.deriv_of_isOpen (isOpen_Ioo) (by norm_num)
+    exact (h3.contDiffAt (isOpen_Ioo.mem_nhds (hx))).differentiableAt (by norm_num)
   have h : HasDerivAt (fun t => L.p (t) * deriv (I.Xₙ (n)) (t))
       (deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) + L.p (x) * deriv (deriv (I.Xₙ (n))) (x)) (x) :=
-    hp.hasDerivAt.mul ((differentiableAt_deriv_Xₙ (I) (n) (hx)).hasDerivAt)
+    hp.hasDerivAt.mul hd.hasDerivAt
   have := hS.2 (n) (x) (Ioo_subset_Icc_self (hx))
   simp only [Operator.apply, h.deriv] at this
   linear_combination this
