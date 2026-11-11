@@ -106,7 +106,7 @@ variable {L : Operator} {w : ℝ → ℝ}
 
 /-- Step 1. At interior points `(p Xₙ')' = p Xₙ'' + p' Xₙ'`, so
 `p Xₙ'' + p' Xₙ' + q Xₙ + λₙ w Xₙ = 0`. -/
-theorem expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     L.p (x) * deriv (deriv (I.Xₙ (n))) (x) + deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) +
       L.q (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0 := by
   sorry
@@ -115,7 +115,7 @@ theorem expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (
 
 /-- Step 2. With `α = p'/p`, `β = q/p`, `γ = w/p`, for every `n` and interior `x`:
 `Xₙ'' + α Xₙ' + β Xₙ + λₙ γ Xₙ = 0`. For fixed `x` this is linear in `(α, β, γ)`. -/
-theorem linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ}
+lemma linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
     deriv (deriv (I.Xₙ (n))) (x) + α (L) (x) * deriv (I.Xₙ (n)) (x) +
       β (L) (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * γ (L) (w) (x) * I.Xₙ (n) (x) = 0 := by
@@ -125,7 +125,7 @@ theorem linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ}
 
 /-- Step 3. For `n = 0, 1, 2` the equations of step 2 form the system
 `M (x) (α, β, γ)ᵀ = r (x)`. -/
-theorem coeffMatrix_mulVec (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma coeffMatrix_mulVec (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     (coeffMatrix (I) (x)).mulVec ![α (L) (x), β (L) (x), γ (L) (w) (x)] =
       rhs (I) (x) := by
   sorry
@@ -134,64 +134,64 @@ theorem coeffMatrix_mulVec (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo
 
 /-- Step 4. Wherever `D (x) ≠ 0`, `(α, β, γ) = (A, B, G) / D`. This is a necessary condition on
 every solution. -/
-theorem α_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+lemma α_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (x) ≠ 0) : α (L) (x) = cramerNum (I) (0) (x) / D (I) (x) := by
   sorry
 
 /-- Step 4, for `β`. -/
-theorem β_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+lemma β_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (x) ≠ 0) : β (L) (x) = cramerNum (I) (1) (x) / D (I) (x) := by
   sorry
 
 /-- Step 4, for `γ`. -/
-theorem γ_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+lemma γ_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (x) ≠ 0) : γ (L) (w) (x) = cramerNum (I) (2) (x) / D (I) (x) := by
   sorry
 
 /-! ### Step 5: `D ≠ 0` on a dense set -/
 
 /-- Step 5 (the key lemma). `D` does not vanish on any subinterval of `(a, b)`. -/
-theorem exists_D_ne_zero (hS : I.IsSolution (L) (w)) {c d : ℝ} (hcd : c < d)
+lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) {c d : ℝ} (hcd : c < d)
     (hsub : Ioo (c) (d) ⊆ Ioo (I.a) (I.b)) : ∃ x ∈ Ioo (c) (d), D (I) (x) ≠ 0 := by
   sorry
 
 /-- Step 5. The set `{D ≠ 0}` is dense in `(a, b)`. -/
-theorem closure_regularSet : Ioo (I.a) (I.b) ⊆ closure (regularSet (I)) := by
+lemma closure_regularSet : Ioo (I.a) (I.b) ⊆ closure (regularSet (I)) := by
   sorry
 
 /-- Step 5. At every interior point, `α` is the limit of `A / D` along the points where
 `D ≠ 0`. -/
-theorem tendsto_α (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma tendsto_α (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (0) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
       (𝓝 (α (L) (x))) := by
   sorry
 
 /-- Step 5, for `β` and `B / D`. -/
-theorem tendsto_β (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma tendsto_β (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (1) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
       (𝓝 (β (L) (x))) := by
   sorry
 
 /-- Step 5, for `γ` and `G / D`. -/
-theorem tendsto_γ (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma tendsto_γ (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     Tendsto (fun y => cramerNum (I) (2) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
       (𝓝 (γ (L) (w) (x))) := by
   sorry
 
 /-- Step 5. Hence `ratioLimit 0` recovers `α` at interior points. -/
-theorem ratioLimit_zero_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma ratioLimit_zero_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     ratioLimit (I) (0) (x) = α (L) (x) := by
   sorry
 
 /-- Step 5. Hence `ratioLimit 1` recovers `β`, also at the endpoints: `β = q/p` is continuous
 on all of `[a, b]`. -/
-theorem ratioLimit_one_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma ratioLimit_one_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     ratioLimit (I) (1) (x) = β (L) (x) := by
   sorry
 
 /-- Step 5. Hence `ratioLimit 2` recovers `γ`, also at the endpoints: `γ = w/p` is continuous
 on all of `[a, b]`. -/
-theorem ratioLimit_two_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma ratioLimit_two_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     ratioLimit (I) (2) (x) = γ (L) (w) (x) := by
   sorry
 
@@ -199,19 +199,19 @@ theorem ratioLimit_two_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc 
 
 /-- Step 6. `p (x) = p (a) exp ∫ₐˣ α`. With the normalisation `p (a) = 1` this says
 `pRec = p / p (a)`. -/
-theorem pRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma pRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     pRec (I) (x) = L.p (x) / L.p (I.a) := by
   sorry
 
 /-! ### Step 7: recover `q` and `w` -/
 
 /-- Step 7. `q = p β`: `qRec = q / p (a)`. -/
-theorem qRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma qRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     qRec (I) (x) = L.q (x) / L.p (I.a) := by
   sorry
 
 /-- Step 7. `w = p γ`: `wRec = w / p (a)`. -/
-theorem wRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma wRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     wRec (I) (x) = w (x) / L.p (I.a) := by
   sorry
 
@@ -219,7 +219,7 @@ theorem wRec_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b
 
 /-- Step 8. The recovered `(α, β, γ)` satisfy the linear equation of step 2 for *every* eigenpair,
 not only for `n = 0, 1, 2`. -/
-theorem check_eigenpair (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+lemma check_eigenpair (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     deriv (deriv (I.Xₙ (n))) (x) + ratioLimit (I) (0) (x) * deriv (I.Xₙ (n)) (x) +
       ratioLimit (I) (1) (x) * I.Xₙ (n) (x) +
       I.«λₙ» (n) * ratioLimit (I) (2) (x) * I.Xₙ (n) (x) = 0 := by
@@ -229,17 +229,17 @@ theorem check_eigenpair (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
 
 /-- The method finds a solution: `(recOperator, wRec)` solves the inverse problem, and it is
 normalised by `p (a) = 1`. -/
-theorem recSolution_isSolution : I.IsSolution (recOperator (I)) (wRec (I)) := by
+lemma recSolution_isSolution : I.IsSolution (recOperator (I)) (wRec (I)) := by
   sorry
 
 /-- The recovered `p` is normalised: `p (a) = 1`. -/
-theorem pRec_left : pRec (I) (I.a) = 1 := by
+lemma pRec_left : pRec (I) (I.a) = 1 := by
   simp [pRec]
 
 /-- The method finds *the* solution: every solution `(L, w)` is the recovered one multiplied by
 `p (a)`. Together with `pRec_left` this says that the recovered triple is the unique solution
 normalised by `p (a) = 1`. -/
-theorem eq_recSolution (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+lemma eq_recSolution (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
     L.p (x) = L.p (I.a) * pRec (I) (x) ∧ L.q (x) = L.p (I.a) * qRec (I) (x) ∧
       w (x) = L.p (I.a) * wRec (I) (x) := by
   sorry
