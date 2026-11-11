@@ -209,35 +209,6 @@ lemma strictMono_eigenvalue (I : InverseProblem) : StrictMono (I.«λₙ») := b
   rw [hev]
   exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
 
-/-- Every given eigenfunction is nonzero somewhere on `[a, b]`. -/
-lemma exists_ne_zero_Xₙ (I : InverseProblem) (n : ℕ) :
-    ∃ x ∈ Icc (I.a) (I.b), I.Xₙ (n) (x) ≠ 0 := by
-  obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
-  have := (hP (n)).2
-  rwa [ha, hb] at this
-
-/-- `Xₙ` solves the equation `L y = -λₙ w y` for the operator of a solution. -/
-lemma isSolution_Xₙ (hS : I.IsSolution (L) (w)) (n : ℕ) :
-    L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) :=
-  ⟨contDiffOn_Xₙ (I) (n), fun x hx => by
-    have := hS.2 (n) (x) (hx)
-    linear_combination this⟩
-
-/-- An eigenfunction cannot vanish on a nonempty open subset of `(a, b)`
-(Cauchy uniqueness). -/
-lemma exists_ne_zero_Xₙ_of_isOpen (hS : I.IsSolution (L) (w)) (n : ℕ) {U : Set (ℝ)}
-    (hU : IsOpen (U)) (hsub : U ⊆ Ioo (I.a) (I.b)) (hne : U.Nonempty) :
-    ∃ x ∈ U, I.Xₙ (n) (x) ≠ 0 := by
-  by_contra hcon
-  push Not at hcon
-  obtain ⟨x₀, hx₀⟩ := hne
-  have hev : I.Xₙ (n) =ᶠ[𝓝 (x₀)] fun _ => 0 := by
-    filter_upwards [hU.mem_nhds (hx₀)] with t ht using hcon (t) (ht)
-  have h1 : deriv (I.Xₙ (n)) (x₀) = 0 := by rw [hev.deriv_eq]; simp
-  obtain ⟨z, hz, hzne⟩ := exists_ne_zero_Xₙ (I) (n)
-  exact hzne (eq_zero_of_cauchy (hS.1) (isSolution_Xₙ (hS) (n)) (hsub (hx₀)) (hev.eq_of_nhds)
-    (h1) (z) (hz))
-
 /-- Step 5 (the key lemma). `D` does not vanish on any subinterval of `(a, b)`. -/
 lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : ℝ} (hcd : c < d)
     (hsub : Ioo (c) (d) ⊆ Ioo (I.a) (I.b)) : ∃ x ∈ Ioo (c) (d), D (I) (e) (x) ≠ 0 := by
@@ -246,11 +217,31 @@ lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : 
   have hl := strictMono_eigenvalue (I)
   have hsubI : ∀ n, ContinuousOn (I.Xₙ (n)) (Ioo (I.a) (I.b)) := fun n =>
     ((contDiffOn_Xₙ (I) (n)).continuousOn).mono (Ioo_subset_Icc_self)
+  -- `Xₙ` solves the equation `L y = -λₙ w y` for the operator of a solution
+  have hsol : ∀ n, L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun n =>
+    ⟨contDiffOn_Xₙ (I) (n), fun x hx => by
+      have := hS.2 (n) (x) (hx)
+      linear_combination this⟩
   -- shrink to an open set on which a given eigenfunction does not vanish
   have step : ∀ (n : ℕ) (U : Set (ℝ)), IsOpen (U) → U ⊆ Ioo (I.a) (I.b) → U.Nonempty →
       ∃ U' ⊆ U, IsOpen (U') ∧ U'.Nonempty ∧ ∀ x ∈ U', I.Xₙ (n) (x) ≠ 0 := by
     intro n U hU hUsub hne
-    obtain ⟨x, hxU, hxne⟩ := exists_ne_zero_Xₙ_of_isOpen (hS) (n) (hU) (hUsub) (hne)
+    -- an eigenfunction cannot vanish on a nonempty open subset of `(a, b)` (Cauchy uniqueness)
+    have hex : ∃ x ∈ U, I.Xₙ (n) (x) ≠ 0 := by
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨x₀, hx₀⟩ := hne
+      have hev : I.Xₙ (n) =ᶠ[𝓝 (x₀)] fun _ => 0 := by
+        filter_upwards [hU.mem_nhds (hx₀)] with t ht using hcon (t) (ht)
+      have h1 : deriv (I.Xₙ (n)) (x₀) = 0 := by rw [hev.deriv_eq]; simp
+      -- every given eigenfunction is nonzero somewhere on `[a, b]`
+      obtain ⟨z, hz, hzne⟩ : ∃ z ∈ Icc (I.a) (I.b), I.Xₙ (n) (z) ≠ 0 := by
+        obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
+        have := (hP (n)).2
+        rwa [ha, hb] at this
+      exact hzne (eq_zero_of_cauchy (hS.1) (hsol (n)) (hUsub (hx₀)) (hev.eq_of_nhds) (h1) (z)
+        (hz))
+    obtain ⟨x, hxU, hxne⟩ := hex
     refine ⟨U ∩ I.Xₙ (n) ⁻¹' {0}ᶜ, inter_subset_left, ?_, ⟨x, hxU, hxne⟩, fun t ht => ht.2⟩
     exact ((hsubI (n)).mono (hUsub)).isOpen_inter_preimage (hU) (isOpen_compl_singleton)
   have h0 : Ioo (c) (d) ⊆ Ioo (I.a) (I.b) := hsub
@@ -278,7 +269,7 @@ lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : 
     hS.1.p_pos (x) (Ioo_subset_Icc_self (hWab (hx)))
   have hmd : ∀ i, ∀ x ∈ W, HasDerivAt (m (i))
       (-(L.q (x) + l (i) * w (x)) - (m (i) (x)) ^ 2 / L.p (x)) (x) := fun i x hx =>
-    hasDerivAt_ratio (hS.1) (isSolution_Xₙ (hS) (e (i))) (hWab (hx)) (hY (x) (hx) (i))
+    hasDerivAt_ratio (hS.1) (hsol (e (i))) (hWab (hx)) (hY (x) (hx) (i))
   have hprop : ∀ x ∈ W,
       (l (1) - l (0)) * (m (2) (x) - m (0) (x)) = (l (2) - l (0)) * (m (1) (x) - m (0) (x)) := by
     intro x hx
