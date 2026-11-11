@@ -32,7 +32,7 @@ namespace MathPhysicsTheory.SturmLiouville.InverseProblem
 section Lemmas
 
 /-- `p` is differentiable at interior points. -/
-private theorem differentiableAt_p {a b : ℝ} {L : Operator} {w : ℝ → ℝ}
+theorem differentiableAt_p {a b : ℝ} {L : Operator} {w : ℝ → ℝ}
     {Ba Bb : BoundaryConditions.Robin.Operator}
     (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb)) {x : ℝ} (hx : x ∈ Ioo (a) (b)) :
     DifferentiableAt (ℝ) (L.p) (x) :=

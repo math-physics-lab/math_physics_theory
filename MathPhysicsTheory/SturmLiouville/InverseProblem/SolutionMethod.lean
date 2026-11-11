@@ -9,8 +9,8 @@ import MathPhysicsTheory.Linter.ArgParens
 /-!
 # A solution method for the inverse Sturm-Liouville problem
 
-Statements (no proofs yet) for the solution method described in
-`InverseProblem/Basic/NOTE.md`. Every `sorry` below is a theorem still to be proved.
+Statements and proofs for the solution method described in `InverseProblem/Basic/NOTE.md`.
+Steps 1 to 4 are proved. Every `sorry` below (steps 5 to 9) is a lemma still to be proved.
 
 Given the eigenpairs `(λₙ, Xₙ)` of an inverse problem `I`, the method finds `(p, q, w)` using only
 three of them, `n = e 0 < e 1 < e 2`. They need not be the first three: `e : Fin 3 → ℕ` is any
@@ -107,6 +107,22 @@ noncomputable def γ (L : Operator) (w : ℝ → ℝ) (x : ℝ) : ℝ :=
 variable {I} {e}
 variable {L : Operator} {w : ℝ → ℝ}
 
+/-- The given eigenfunctions are `C²` on `[a, b]`. -/
+lemma contDiffOn_Xₙ (I : InverseProblem) (n : ℕ) :
+    ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := by
+  obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
+  have := (hP (n)).1.1.1
+  rwa [ha, hb] at this
+
+/-- The derivative of an eigenfunction is differentiable at interior points. -/
+lemma differentiableAt_deriv_Xₙ (I : InverseProblem) (n : ℕ) {x : ℝ}
+    (hx : x ∈ Ioo (I.a) (I.b)) : DifferentiableAt (ℝ) (deriv (I.Xₙ (n))) (x) := by
+  have h2 : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Ioo (I.a) (I.b)) :=
+    (contDiffOn_Xₙ (I) (n)).mono (Ioo_subset_Icc_self)
+  have h3 : ContDiffOn (ℝ) (1) (deriv (I.Xₙ (n))) (Ioo (I.a) (I.b)) :=
+    h2.deriv_of_isOpen (isOpen_Ioo) (by norm_num)
+  exact (h3.contDiffAt (isOpen_Ioo.mem_nhds (hx))).differentiableAt (by norm_num)
+
 /-! ### Step 1: expand the operator -/
 
 /-- Step 1. At interior points `(p Xₙ')' = p Xₙ'' + p' Xₙ'`, so
@@ -114,7 +130,13 @@ variable {L : Operator} {w : ℝ → ℝ}
 lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     L.p (x) * deriv (deriv (I.Xₙ (n))) (x) + deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) +
       L.q (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0 := by
-  sorry
+  have hp : DifferentiableAt (ℝ) (L.p) (x) := differentiableAt_p (hS.1) (hx)
+  have h : HasDerivAt (fun t => L.p (t) * deriv (I.Xₙ (n)) (t))
+      (deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) + L.p (x) * deriv (deriv (I.Xₙ (n))) (x)) (x) :=
+    hp.hasDerivAt.mul ((differentiableAt_deriv_Xₙ (I) (n) (hx)).hasDerivAt)
+  have := hS.2 (n) (x) (Ioo_subset_Icc_self (hx))
+  simp only [Operator.apply, h.deriv] at this
+  linear_combination this
 
 /-! ### Step 2: divide by `p` and rename the unknowns -/
 
@@ -123,7 +145,11 @@ lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.
 lemma linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     deriv (deriv (I.Xₙ (n))) (x) + α (L) (x) * deriv (I.Xₙ (n)) (x) +
       β (L) (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * γ (L) (w) (x) * I.Xₙ (n) (x) = 0 := by
-  sorry
+  have hp : L.p (x) ≠ 0 := (hS.1.p_pos (x) (Ioo_subset_Icc_self (hx))).ne'
+  have h := expand (hS) (n) (hx)
+  simp only [α, β, γ]
+  field_simp
+  linear_combination h
 
 /-! ### Step 3: three eigenpairs give a linear system -/
 
@@ -132,25 +158,48 @@ lemma linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x �
 lemma coeffMatrix_mulVec (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
     (coeffMatrix (I) (e) (x)).mulVec ![α (L) (x), β (L) (x), γ (L) (w) (x)] =
       rhs (I) (e) (x) := by
-  sorry
+  ext i
+  have h := linear_equation (hS) (e (i)) (hx)
+  simp [Matrix.mulVec, dotProduct, Fin.sum_univ_three, coeffMatrix, rhs]
+  linear_combination h
 
 /-! ### Step 4: Cramer's rule -/
+
+/-- If `A x = b`, then the `k`-th Cramer numerator `det (A with column k replaced by b)` equals
+`det A * x k`. -/
+lemma cramer_eq_det_mul {A : Matrix (Fin (3)) (Fin (3)) (ℝ)} {x b : Fin (3) → (ℝ)}
+    (h : A.mulVec (x) = b) (k : Fin (3)) : Matrix.cramer (A) (b) (k) = A.det * x (k) := by
+  rw [Matrix.cramer_eq_adjugate_mulVec, ← h, Matrix.mulVec_mulVec, Matrix.adjugate_mul]
+  rw [Matrix.smul_mulVec, Matrix.one_mulVec]
+  rfl
 
 /-- Step 4. Wherever `D (x) ≠ 0`, `(α, β, γ) = (A, B, G) / D`. This is a necessary condition on
 every solution. -/
 lemma α_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (e) (x) ≠ 0) : α (L) (x) = cramerNum (I) (e) (0) (x) / D (I) (e) (x) := by
-  sorry
+  have h := cramer_eq_det_mul (coeffMatrix_mulVec (e := e) (hS) (hx)) (0)
+  rw [eq_div_iff (hD)]
+  simp only [cramerNum, D, h]
+  simp
+  ring
 
 /-- Step 4, for `β`. -/
 lemma β_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (e) (x) ≠ 0) : β (L) (x) = cramerNum (I) (e) (1) (x) / D (I) (e) (x) := by
-  sorry
+  have h := cramer_eq_det_mul (coeffMatrix_mulVec (e := e) (hS) (hx)) (1)
+  rw [eq_div_iff (hD)]
+  simp only [cramerNum, D, h]
+  simp
+  ring
 
 /-- Step 4, for `γ`. -/
 lemma γ_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
     (hD : D (I) (e) (x) ≠ 0) : γ (L) (w) (x) = cramerNum (I) (e) (2) (x) / D (I) (e) (x) := by
-  sorry
+  have h := cramer_eq_det_mul (coeffMatrix_mulVec (e := e) (hS) (hx)) (2)
+  rw [eq_div_iff (hD)]
+  simp only [cramerNum, D, h]
+  simp
+  ring
 
 /-! ### Step 5: `D ≠ 0` on a dense set -/
 
