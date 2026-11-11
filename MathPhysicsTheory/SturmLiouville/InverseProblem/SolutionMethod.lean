@@ -203,18 +203,16 @@ lemma γ_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (
 
 /-! ### Step 5: `D ≠ 0` on a dense set -/
 
-/-- The given eigenvalues are strictly increasing. -/
-lemma strictMono_eigenvalue (I : InverseProblem) : StrictMono (I.«λₙ») := by
-  obtain ⟨P, -, -, -, -, hev, -⟩ := I.assumptions.exists_problem
-  rw [hev]
-  exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
-
 /-- Step 5 (the key lemma). `D` does not vanish on any subinterval of `(a, b)`. -/
 lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : ℝ} (hcd : c < d)
     (hsub : Ioo (c) (d) ⊆ Ioo (I.a) (I.b)) : ∃ x ∈ Ioo (c) (d), D (I) (e) (x) ≠ 0 := by
   by_contra hcon
   push Not at hcon
-  have hl := strictMono_eigenvalue (I)
+  -- the given eigenvalues are strictly increasing
+  have hl : StrictMono (I.«λₙ») := by
+    obtain ⟨P, -, -, -, -, hev, -⟩ := I.assumptions.exists_problem
+    rw [hev]
+    exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
   have hsubI : ∀ n, ContinuousOn (I.Xₙ (n)) (Ioo (I.a) (I.b)) := fun n =>
     ((contDiffOn_Xₙ (I) (n)).continuousOn).mono (Ioo_subset_Icc_self)
   -- `Xₙ` solves the equation `L y = -λₙ w y` for the operator of a solution
