@@ -115,10 +115,12 @@ lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.
     L.p (x) * deriv (deriv (I.Xₙ (n))) (x) + deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) +
       L.q (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0 := by
   have hp : DifferentiableAt (ℝ) (L.p) (x) := differentiableAt_p (hS.1) (hx)
+  -- The given eigenfunctions are `C²` on `[a, b]`.
   have hC : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := by
     obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
     have := (hP (n)).1.1.1
     rwa [ha, hb] at this
+  -- The derivative of an eigenfunction is differentiable at interior points.
   have hd : DifferentiableAt (ℝ) (deriv (I.Xₙ (n))) (x) := by
     have h2 : ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Ioo (I.a) (I.b)) :=
       hC.mono (Ioo_subset_Icc_self)
