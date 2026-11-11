@@ -43,7 +43,7 @@ variable {a b : ℝ} {L L₁ L₂ : Operator} {w w₁ w₂ : ℝ → ℝ} {l : �
 
 /-- At an interior point, `y` is differentiable and the flux `p y'` has derivative
 `-(q + λ w) y`. -/
-private theorem solution_hasDerivAt
+theorem solution_hasDerivAt
     (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x : ℝ} (hx : x ∈ Ioo (a) (b)) :
     HasDerivAt (y) (deriv (y) (x)) (x) ∧
@@ -66,7 +66,7 @@ private theorem solution_hasDerivAt
 
 /-- Uniqueness for the Cauchy problem: a solution with `y (x₁) = 0` and `y' (x₁) = 0` at an interior
 point `x₁` vanishes on all of `[a, b]`. -/
-private theorem eq_zero_of_cauchy (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
+theorem eq_zero_of_cauchy (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x₁ : ℝ} (hx₁ : x₁ ∈ Ioo (a) (b))
     (h0 : y (x₁) = 0) (h1 : deriv (y) (x₁) = 0) : ∀ x ∈ Icc (a) (b), y (x) = 0 := by
   have hab : a < b := hx₁.1.trans (hx₁.2)
@@ -167,7 +167,7 @@ private theorem relation (hA₁ : SturmLiouville.Assumptions (a) (b) (L₁) (w�
 
 /-- The logarithmic flux `m = L.p y' / y` satisfies the Riccati equation
 `m' = -(L.q + λ w) - m² / L.p` where `y ≠ 0`. -/
-private theorem hasDerivAt_ratio (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
+theorem hasDerivAt_ratio (hA : SturmLiouville.Assumptions (a) (b) (L) (w) (Ba) (Bb))
     (h : L.IsSolution (a) (b) (w) (l) (y)) {x : ℝ} (hx : x ∈ Ioo (a) (b))
     (hy : y (x) ≠ 0) :
     HasDerivAt (fun t => L.p (t) * deriv (y) (t) / y (t))
@@ -197,7 +197,7 @@ private theorem eq_zero_of_mul_eq_zero (hA : SturmLiouville.Assumptions (a) (b) 
 
 /-- The algebraic core of the uniqueness argument: if the ratios `uₙ` satisfy the Riccati equation
 for three distinct eigenvalues `l₀ < l₁ < l₂` and are affine in `λ`, then `u₁ = u₀`. -/
-private theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (h₀₁ : l₀ < l₁)
+theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (h₀₁ : l₀ < l₁)
     (h₁₂ : l₁ < l₂)
     (H : (l₁ - l₀) * (u₂ - u₀) = (l₂ - l₀) * (u₁ - u₀))
     (E : (l₁ - l₀) * ((-(q + l₂ * w) - u₂ ^ 2 / P) - (-(q + l₀ * w) - u₀ ^ 2 / P)) =
