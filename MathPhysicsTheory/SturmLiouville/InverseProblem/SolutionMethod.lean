@@ -273,7 +273,10 @@ lemma qRec_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
 /-- Step 7. `w = p γ`: `wRec = w / p (a)`. -/
 lemma wRec_eq (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
     (hx : x ∈ Icc (I.a) (I.b)) : wRec (I) (e) (x) = w (x) / L.p (I.a) := by
-  sorry
+  have hpx : 0 < L.p (x) := hS.1.p_pos (x) (hx)
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  rw [wRec, pRec_eq (hS) (he) (hx), ratioLimit_two_eq (hS) (he) (hx), γ]
+  field_simp
 
 /-! ### Step 8: check with the remaining eigenpairs -/
 
