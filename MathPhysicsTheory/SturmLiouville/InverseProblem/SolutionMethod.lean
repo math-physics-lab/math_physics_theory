@@ -18,8 +18,10 @@ Given the eigenpairs `(λₙ, Xₙ)` of an inverse problem `I`, the method finds
 * **Step 1** (`expand`): `p Xₙ'' + p' Xₙ' + q Xₙ + λₙ w Xₙ = 0`.
 * **Step 2** (`linear_equation`): `Xₙ'' + α Xₙ' + β Xₙ + λₙ γ Xₙ = 0`, linear in `(α, β, γ)`.
 * **Step 3** (`coeffMatrix_mulVec`): `M(x) (α, β, γ)ᵀ = r(x)` for `n = 0, 1, 2`.
-* **Step 4** (`unknowns_eq_cramer`): `(α, β, γ) = (A, B, G) / D` where `D = det M ≠ 0`.
-* **Step 5** (`closure_regularSet`, `ratioLimit_eq`): `{D ≠ 0}` is dense in `(a, b)`, and
+* **Step 4** (`alpha_eq_cramer`, `beta_eq_cramer`, `gamma_eq_cramer`): `(α, β, γ) = (A, B, G) / D`
+  where `D = det M ≠ 0`.
+* **Step 5** (`closure_regularSet`, `ratioLimit_zero_eq`, `ratioLimit_one_eq`,
+  `ratioLimit_two_eq`): `{D ≠ 0}` is dense in `(a, b)`, and
   `(α, β, γ)` is the limit of `(A, B, G) / D` along it.
 * **Step 6** (`pRec_eq`): `p = p(a) exp ∫ₐˣ α`.
 * **Step 7** (`qRec_eq`, `wRec_eq`): `q = p β`, `w = p γ`.
@@ -85,9 +87,17 @@ noncomputable def wRec (x : ℝ) : ℝ :=
 noncomputable def recOperator : Operator :=
   { p := pRec (I), q := qRec (I) }
 
-/-- The renamed unknowns `(α, β, γ) = (p'/p, q/p, w/p)` of a solution `(L, w)` at `x` (step 2). -/
-noncomputable def unknowns (L : Operator) (w : ℝ → ℝ) (x : ℝ) : Fin (3) → (ℝ) :=
-  ![deriv (L.p) (x) / L.p (x), L.q (x) / L.p (x), w (x) / L.p (x)]
+/-- `α = p'/p` (step 2). -/
+noncomputable def alpha (L : Operator) (x : ℝ) : ℝ :=
+  deriv (L.p) (x) / L.p (x)
+
+/-- `β = q/p` (step 2). -/
+noncomputable def beta (L : Operator) (x : ℝ) : ℝ :=
+  L.q (x) / L.p (x)
+
+/-- `γ = w/p` (step 2). -/
+noncomputable def gamma (L : Operator) (w : ℝ → ℝ) (x : ℝ) : ℝ :=
+  w (x) / L.p (x)
 
 variable {I}
 variable {L : Operator} {w : ℝ → ℝ}
@@ -107,9 +117,8 @@ theorem expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (
 `Xₙ'' + α Xₙ' + β Xₙ + λₙ γ Xₙ = 0`. For fixed `x` this is linear in `(α, β, γ)`. -/
 theorem linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ}
     (hx : x ∈ Ioo (I.a) (I.b)) :
-    deriv (deriv (I.Xₙ (n))) (x) + unknowns (L) (w) (x) (0) * deriv (I.Xₙ (n)) (x) +
-      unknowns (L) (w) (x) (1) * I.Xₙ (n) (x) +
-      I.«λₙ» (n) * unknowns (L) (w) (x) (2) * I.Xₙ (n) (x) = 0 := by
+    deriv (deriv (I.Xₙ (n))) (x) + alpha (L) (x) * deriv (I.Xₙ (n)) (x) +
+      beta (L) (x) * I.Xₙ (n) (x) + I.«λₙ» (n) * gamma (L) (w) (x) * I.Xₙ (n) (x) = 0 := by
   sorry
 
 /-! ### Step 3: three eigenpairs give a linear system -/
@@ -117,16 +126,26 @@ theorem linear_equation (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ}
 /-- Step 3. For `n = 0, 1, 2` the equations of step 2 form the system
 `M (x) (α, β, γ)ᵀ = r (x)`. -/
 theorem coeffMatrix_mulVec (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
-    (coeffMatrix (I) (x)).mulVec (unknowns (L) (w) (x)) = rhs (I) (x) := by
+    (coeffMatrix (I) (x)).mulVec ![alpha (L) (x), beta (L) (x), gamma (L) (w) (x)] =
+      rhs (I) (x) := by
   sorry
 
 /-! ### Step 4: Cramer's rule -/
 
 /-- Step 4. Wherever `D (x) ≠ 0`, `(α, β, γ) = (A, B, G) / D`. This is a necessary condition on
 every solution. -/
-theorem unknowns_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
-    (hD : D (I) (x) ≠ 0) (k : Fin (3)) :
-    unknowns (L) (w) (x) (k) = cramerNum (I) (k) (x) / D (I) (x) := by
+theorem alpha_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+    (hD : D (I) (x) ≠ 0) : alpha (L) (x) = cramerNum (I) (0) (x) / D (I) (x) := by
+  sorry
+
+/-- Step 4, for `β`. -/
+theorem beta_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+    (hD : D (I) (x) ≠ 0) : beta (L) (x) = cramerNum (I) (1) (x) / D (I) (x) := by
+  sorry
+
+/-- Step 4, for `γ`. -/
+theorem gamma_eq_cramer (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
+    (hD : D (I) (x) ≠ 0) : gamma (L) (w) (x) = cramerNum (I) (2) (x) / D (I) (x) := by
   sorry
 
 /-! ### Step 5: `D ≠ 0` on a dense set -/
@@ -140,24 +159,40 @@ theorem exists_D_ne_zero (hS : I.IsSolution (L) (w)) {c d : ℝ} (hcd : c < d)
 theorem closure_regularSet : Ioo (I.a) (I.b) ⊆ closure (regularSet (I)) := by
   sorry
 
-/-- Step 5. At every interior point, `(α, β, γ)` is the limit of `(A, B, G) / D` along the points
-where `D ≠ 0`. -/
-theorem tendsto_cramer_ratio (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
-    (k : Fin (3)) :
-    Tendsto (fun y => cramerNum (I) (k) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
-      (𝓝 (unknowns (L) (w) (x) (k))) := by
+/-- Step 5. At every interior point, `α` is the limit of `A / D` along the points where
+`D ≠ 0`. -/
+theorem tendsto_alpha (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+    Tendsto (fun y => cramerNum (I) (0) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
+      (𝓝 (alpha (L) (x))) := by
   sorry
 
-/-- Step 5. Hence `ratioLimit` recovers `(α, β, γ)` at interior points. -/
-theorem ratioLimit_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b))
-    (k : Fin (3)) : ratioLimit (I) (k) (x) = unknowns (L) (w) (x) (k) := by
+/-- Step 5, for `β` and `B / D`. -/
+theorem tendsto_beta (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+    Tendsto (fun y => cramerNum (I) (1) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
+      (𝓝 (beta (L) (x))) := by
   sorry
 
-/-- Step 5, at the endpoints. `β = q/p` and `γ = w/p` are continuous on all of `[a, b]`, so
-`ratioLimit` recovers them there too. -/
-theorem ratioLimit_eq_of_mem_Icc (hS : I.IsSolution (L) (w)) {x : ℝ}
-    (hx : x ∈ Icc (I.a) (I.b)) (k : Fin (3)) (hk : k ≠ 0) :
-    ratioLimit (I) (k) (x) = unknowns (L) (w) (x) (k) := by
+/-- Step 5, for `γ` and `G / D`. -/
+theorem tendsto_gamma (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+    Tendsto (fun y => cramerNum (I) (2) (y) / D (I) (y)) (𝓝[regularSet (I)] (x))
+      (𝓝 (gamma (L) (w) (x))) := by
+  sorry
+
+/-- Step 5. Hence `ratioLimit 0` recovers `α` at interior points. -/
+theorem ratioLimit_zero_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Ioo (I.a) (I.b)) :
+    ratioLimit (I) (0) (x) = alpha (L) (x) := by
+  sorry
+
+/-- Step 5. Hence `ratioLimit 1` recovers `β`, also at the endpoints: `β = q/p` is continuous
+on all of `[a, b]`. -/
+theorem ratioLimit_one_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+    ratioLimit (I) (1) (x) = beta (L) (x) := by
+  sorry
+
+/-- Step 5. Hence `ratioLimit 2` recovers `γ`, also at the endpoints: `γ = w/p` is continuous
+on all of `[a, b]`. -/
+theorem ratioLimit_two_eq (hS : I.IsSolution (L) (w)) {x : ℝ} (hx : x ∈ Icc (I.a) (I.b)) :
+    ratioLimit (I) (2) (x) = gamma (L) (w) (x) := by
   sorry
 
 /-! ### Step 6: recover `p` by one integration -/
