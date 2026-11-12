@@ -83,7 +83,7 @@ theorem toRobin_satisfies_iff (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ)
 /-- `y` satisfies the Neumann condition with right-hand side `g` iff `y'(c) = g(c)`. -/
 theorem satisfies_iff (B : Operator) (g : ℝ → ℝ) (y : ℝ → ℝ) :
     B.Satisfies (g) (y) ↔ deriv (y) (B.c) = g (B.c) := by
-  show B.apply (y) = g (B.c) ↔ _
+  change B.apply (y) = g (B.c) ↔ _
   rw [apply_eq]
 
 /-- If `y` and `z` satisfy Neumann conditions with right-hand sides `g₁` and `g₂`, then `y + z`
