@@ -9,7 +9,7 @@ open MathPhysicsTheory.SturmLiouville.Eigenvalues
 /-- `sin` is an eigenfunction of the Dirichlet problem for `λ = 1`: it is nonzero at `π / 2`. -/
 example : IsEigenfunction (dirichlet) (1) (Real.sin) :=
   ⟨⟨⟨Real.contDiff_sin.contDiffOn, by
-    simp [dirichlet, Operator.apply, Dirichlet.Operator.satisfies_iff]⟩, by
+    simp [dirichlet, Operator.apply]⟩, by
     simp [dirichlet, Dirichlet.Operator.satisfies_iff]⟩, Real.pi / 2,
     ⟨by positivity, half_le_self (Real.pi_pos.le)⟩, by simp⟩
 

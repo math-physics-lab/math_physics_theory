@@ -21,7 +21,7 @@ open Lean Elab Command Linter
 
 namespace MathPhysicsTheory.Linter.ArgParens
 
-/-- The `argParens` linter reports an error for arguments of function applications that are not written in
+/-- The `argParens` linter flags arguments of function applications that are not written in
 brackets, e.g. the `x` in `f x`. -/
 public register_option linter.argParens : Bool := {
   defValue := false
@@ -62,8 +62,8 @@ def argParensLinter : Linter where run := withSetOptionIn fun stx => do
   if (← MonadState.get).messages.hasErrors then
     return
   for arg in unbracketedArgs stx do
-    logErrorAt arg m!"Function arguments should be written in parentheses: `({arg})`.\n\n\
-      Note: this linter can be disabled with `set_option {linter.argParens.name} false`"
+    logLint linter.argParens arg
+      m!"Function arguments should be written in parentheses: `({arg})`."
 
 initialize addLinter argParensLinter
 
