@@ -9,14 +9,8 @@ import MathPhysicsTheory.Linter.ArgParens
 /-!
 # A solution method for the inverse Sturm-Liouville problem
 
-Statements and proofs for the solution method described in `InverseProblem/Basic/NOTE.md`.
-Steps 1 to 6 are proved. Every `sorry` below (steps 7 to 9) is a lemma still to be proved.
-
-Given the eigenpairs `(λₙ, Xₙ)` of an inverse problem `I`, the method finds `(p, q, w)` using only
-three of them, `n = e 0 < e 1 < e 2`. They need not be the first three: `e : Fin 3 → ℕ` is any
-strictly increasing choice of indices (`StrictMono (e)`), and the first three are `e = id`.
-Any three distinct indices can be reduced to this case by reordering the rows of `M`, which
-changes `D` only by a sign. For a solution `(L, w)` write `α = p'/p`, `β = q/p`, `γ = w/p`.
+Statements and proofs for the solution method described in the
+[`InverseProblem.Basic` note](https://math-physics-lab.github.io/math_physics_theory/MathPhysicsTheory/SturmLiouville/InverseProblem/Basic/).
 
 * **Step 1** (`expand`): `p Xₙ'' + p' Xₙ' + q Xₙ + λₙ w Xₙ = 0`.
 * **Step 2** (`linear_equation`): `Xₙ'' + α Xₙ' + β Xₙ + λₙ γ Xₙ = 0`, linear in `(α, β, γ)`.
@@ -129,7 +123,7 @@ lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.
     exact (h3.contDiffAt (isOpen_Ioo.mem_nhds (hx))).differentiableAt (by norm_num)
   have h : HasDerivAt (fun t => L.p (t) * deriv (I.Xₙ (n)) (t))
       (deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) + L.p (x) * deriv (deriv (I.Xₙ (n))) (x)) (x) :=
-    hp.hasDerivAt.mul hd.hasDerivAt
+    hp.hasDerivAt.mul (hd.hasDerivAt)
   have := hS.2 (n) (x) (Ioo_subset_Icc_self (hx))
   simp only [Operator.apply, h.deriv] at this
   linear_combination this
@@ -209,11 +203,16 @@ lemma exists_D_ne_zero (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {c d : 
     obtain ⟨P, -, -, -, -, hev, -⟩ := I.assumptions.exists_problem
     rw [hev]
     exact (Classical.choose_spec (Eigenvalues.exists_eigenvalue_seq (P))).1
+  -- the given eigenfunctions are `C²` on `[a, b]`
+  have hC : ∀ n, ContDiffOn (ℝ) (2) (I.Xₙ (n)) (Icc (I.a) (I.b)) := fun n => by
+    obtain ⟨P, ha, hb, -, -, -, hP⟩ := I.assumptions.exists_problem
+    have := (hP (n)).1.1.1
+    rwa [ha, hb] at this
   have hsubI : ∀ n, ContinuousOn (I.Xₙ (n)) (Ioo (I.a) (I.b)) := fun n =>
-    ((contDiffOn_Xₙ (I) (n)).continuousOn).mono (Ioo_subset_Icc_self)
+    ((hC (n)).continuousOn).mono (Ioo_subset_Icc_self)
   -- `Xₙ` solves the equation `L y = -λₙ w y` for the operator of a solution
   have hsol : ∀ n, L.IsSolution (I.a) (I.b) (w) (I.«λₙ» (n)) (I.Xₙ (n)) := fun n =>
-    ⟨contDiffOn_Xₙ (I) (n), fun x hx => by
+    ⟨hC (n), fun x hx => by
       have := hS.2 (n) (x) (hx)
       linear_combination this⟩
   -- shrink to an open set on which a given eigenfunction does not vanish
