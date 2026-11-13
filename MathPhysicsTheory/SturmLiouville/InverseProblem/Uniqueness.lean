@@ -58,6 +58,7 @@ theorem solution_hasDerivAt
     (differentiableAt_p (hA) (hx)).mul (hy')
   refine ⟨(hy.differentiableAt (by norm_num)).hasDerivAt, ?_⟩
   have := h.2 (x) (Ioo_subset_Icc_self (hx))
+  rw [Operator.applyOn_eq_apply_of_mem_interior (L) (Icc_mem_nhds (hx.1) (hx.2))] at this
   simp only [Operator.apply] at this
   have e : deriv (fun t => L.p (t) * deriv (y) (t)) (x) = -(L.q (x) + l * w (x)) * y (x) := by
     linarith
