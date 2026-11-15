@@ -125,6 +125,7 @@ lemma expand (hS : I.IsSolution (L) (w)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo (I.
       (deriv (L.p) (x) * deriv (I.Xₙ (n)) (x) + L.p (x) * deriv (deriv (I.Xₙ (n))) (x)) (x) :=
     hp.hasDerivAt.mul (hd.hasDerivAt)
   have := hS.2 (n) (x) (Ioo_subset_Icc_self (hx))
+  rw [Operator.applyOn_eq_apply_of_mem_interior (L) (Icc_mem_nhds (hx.1) (hx.2))] at this
   simp only [Operator.apply, h.deriv] at this
   linear_combination this
 
@@ -514,7 +515,42 @@ lemma check_eigenpair (he : StrictMono (e)) (n : ℕ) {x : ℝ} (hx : x ∈ Ioo 
 normalised by `p (a) = 1`. -/
 lemma recSolution_isSolution (he : StrictMono (e)) :
     I.IsSolution (recOperator (I) (e)) (wRec (I) (e)) := by
-  sorry
+  obtain ⟨L, w, hS⟩ := I.exists_solution
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  -- on `[a, b]` the recovered functions are the solution divided by `p (a)`
+  have hp : ∀ x ∈ Icc (I.a) (I.b), (recOperator (I) (e)).p (x) = L.p (x) / L.p (I.a) :=
+    fun x hx => pRec_eq (hS) (he) (hx)
+  have hq : ∀ x ∈ Icc (I.a) (I.b), (recOperator (I) (e)).q (x) = L.q (x) / L.p (I.a) :=
+    fun x hx => qRec_eq (hS) (he) (hx)
+  have hw : ∀ x ∈ Icc (I.a) (I.b), wRec (I) (e) (x) = w (x) / L.p (I.a) :=
+    fun x hx => wRec_eq (hS) (he) (hx)
+  refine ⟨⟨?_, ?_, ?_, ?_, ?_, ?_, hS.1.Ba_c, hS.1.Bb_c, hS.1.Ba_ne, hS.1.Bb_ne,
+    hS.1.Ba_mul_nonpos, hS.1.Bb_mul_nonneg⟩, ?_⟩
+  · intro x hx
+    rw [hp (x) (hx)]
+    exact div_pos (hS.1.p_pos (x) (hx)) (hpa)
+  · intro x hx
+    rw [hw (x) (hx)]
+    exact div_pos (hS.1.w_pos (x) (hx)) (hpa)
+  · exact (hS.1.p_contDiffOn.div_const (L.p (I.a))).congr (hp)
+  · exact (hS.1.q_continuousOn.div_const (L.p (I.a))).congr (hq)
+  · exact (hS.1.w_continuousOn.div_const (L.p (I.a))).congr (hw)
+  · intro x hx
+    rw [hq (x) (hx)]
+    exact div_nonpos_of_nonpos_of_nonneg (hS.1.q_nonpos (x) (hx)) (hpa.le)
+  · intro n x hx
+    -- the derivatives are taken within `[a, b]`, so only the values on `[a, b]` matter
+    have hev : Set.EqOn
+        (fun t => (recOperator (I) (e)).p (t) * derivWithin (I.Xₙ (n)) (Icc (I.a) (I.b)) (t))
+        (fun t => (L.p (t) * derivWithin (I.Xₙ (n)) (Icc (I.a) (I.b)) (t)) / L.p (I.a))
+        (Icc (I.a) (I.b)) := fun t ht => by
+      simp only [hp (t) (ht), div_mul_eq_mul_div]
+    have h := hS.2 (n) (x) (hx)
+    simp only [Operator.applyOn] at h ⊢
+    rw [derivWithin_congr (hev) (hev (hx)), derivWithin_div_const,
+      show (recOperator (I) (e)).q (x) = L.q (x) / L.p (I.a) from hq (x) (hx), hw (x) (hx)]
+    field_simp
+    linear_combination h
 
 /-- The recovered `p` is normalised: `p (a) = 1`. -/
 lemma pRec_left : pRec (I) (e) (I.a) = 1 := by
@@ -527,7 +563,9 @@ lemma eq_recSolution (hS : I.IsSolution (L) (w)) (he : StrictMono (e)) {x : ℝ}
     (hx : x ∈ Icc (I.a) (I.b)) :
     L.p (x) = L.p (I.a) * pRec (I) (e) (x) ∧ L.q (x) = L.p (I.a) * qRec (I) (e) (x) ∧
       w (x) = L.p (I.a) * wRec (I) (e) (x) := by
-  sorry
+  have hpa : 0 < L.p (I.a) := hS.1.p_pos (I.a) (left_mem_Icc.2 (I.a_lt_b.le))
+  rw [pRec_eq (hS) (he) (hx), qRec_eq (hS) (he) (hx), wRec_eq (hS) (he) (hx)]
+  refine ⟨?_, ?_, ?_⟩ <;> field_simp
 
 end SolutionMethod
 

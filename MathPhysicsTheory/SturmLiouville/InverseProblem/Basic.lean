@@ -84,7 +84,7 @@ structure InverseProblem where
 namespace InverseProblem
 
 /-- `(L, w)` solves the inverse problem: it satisfies the `Assumptions` and, for every `n`,
-`L Xₙ + λₙ w Xₙ = 0` on `[a, b]`.
+`L Xₙ + λₙ w Xₙ = 0` on `[a, b]`, with derivatives taken within `[a, b]`.
 
 The `Assumptions` fix the allowed types of the unknowns: `p` is `C¹` and positive, `w` is
 continuous and positive, and `q` is continuous with `q ≤ 0` (so `q` may be zero, but `p` and `w`
@@ -92,7 +92,7 @@ may not). -/
 def IsSolution (I : InverseProblem) (L : Operator) (w : ℝ → ℝ) : Prop :=
   SturmLiouville.Assumptions (I.a) (I.b) (L) (w) (I.Ba) (I.Bb) ∧
     ∀ n, ∀ x ∈ Set.Icc (I.a) (I.b),
-      L.apply (I.Xₙ (n)) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0
+      L.applyOn (Set.Icc (I.a) (I.b)) (I.Xₙ (n)) (x) + I.«λₙ» (n) * w (x) * I.Xₙ (n) (x) = 0
 
 /-- Existence: an inverse problem has a solution, namely the operator `P.L` and the weight `P.w` of
 a Sturm-Liouville problem `P` whose eigenpairs are the given data. -/
@@ -106,6 +106,7 @@ theorem exists_solution (I : InverseProblem) :
   · intro n x hx
     have hx' : x ∈ Set.Icc (P.a) (P.b) := by rwa [ha, hb]
     have := (hP (n)).1.1.2 (x) (hx')
+    rw [ha, hb] at this
     linarith
 
 /-- Uniqueness up to a constant factor: two solutions `(p₁, q₁, w₁)` and `(p₂, q₂, w₂)` of the same

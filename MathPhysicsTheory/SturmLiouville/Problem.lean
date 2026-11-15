@@ -53,8 +53,13 @@ noncomputable def dirichlet : Problem where
     Bb_mul_nonneg := by simp }
 
 example : dirichlet.IsSolution (1) (Real.sin) := by
-  refine ⟨⟨Real.contDiff_sin.contDiffOn, ?_⟩, ?_⟩ <;>
-    simp [dirichlet, Operator.apply, Dirichlet.Operator.satisfies_iff]
+  refine ⟨⟨Real.contDiff_sin.contDiffOn, fun x hx => ?_⟩, ?_⟩
+  · change dirichlet.L.applyOn (Set.Icc (0) (Real.pi)) (Real.sin) (x) =
+        -1 * dirichlet.w (x) * Real.sin (x)
+    rw [Operator.applyOn_eq_apply_of_differentiable (dirichlet.L) (uniqueDiffOn_Icc (Real.pi_pos))
+      (hx) (Real.differentiable_sin) (by simp [dirichlet])]
+    simp [dirichlet, Operator.apply]
+  · simp [dirichlet, Dirichlet.Operator.satisfies_iff]
 
 example : ¬ dirichlet.IsSolution (1) (Real.cos) := by
   simp [dirichlet, Problem.IsSolution, Dirichlet.Operator.satisfies_iff]
@@ -120,10 +125,11 @@ structure Problem where
   assumptions : Assumptions (a) (b) (L) (w) (Ba) (Bb)
 
 /-- `y` solves the equation `L y = -λ w y` on `[a, b]`: `y` is twice continuously differentiable on
-`[a, b]` and `L y = -λ w y` there. -/
+`[a, b]` and `L y = -λ w y` there, with the derivatives taken within `[a, b]` (one-sided at the
+endpoints, see `Operator.applyOn`). -/
 def Operator.IsSolution (L : Operator) (a b : ℝ) (w : ℝ → ℝ) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
   ContDiffOn (ℝ) (2) (y) (Set.Icc (a) (b)) ∧
-    ∀ x ∈ Set.Icc (a) (b), L.apply (y) (x) = -«λ» * w (x) * y (x)
+    ∀ x ∈ Set.Icc (a) (b), L.applyOn (Set.Icc (a) (b)) (y) (x) = -«λ» * w (x) * y (x)
 
 namespace Problem
 
@@ -136,7 +142,7 @@ def IsSolution (P : Problem) («λ» : ℝ) (y : ℝ → ℝ) : Prop :=
 theorem isSolution_zero (P : Problem) : ∀ «λ» : ℝ, P.IsSolution («λ») (0) := by
   intro «λ»
   refine ⟨⟨contDiffOn_const, ?_⟩, ?_⟩ <;>
-    simp [Operator.apply, BoundaryConditions.Robin.Operator.Satisfies,
+    simp [Operator.applyOn, BoundaryConditions.Robin.Operator.Satisfies,
       BoundaryConditions.Robin.Operator.apply]
 
 end Problem

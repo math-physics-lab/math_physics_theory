@@ -28,6 +28,6 @@ example (X : ℕ → ℝ → ℝ)
     (dirichletInverse (X) (hX)).IsSolution ({ p := 1, q := 0 }) (1) := by
   refine ⟨dirichlet.assumptions, fun n x hx => ?_⟩
   have h := (hX (n)).1.1.2 (x) (hx)
-  change dirichlet.L.apply (X (n)) (x) +
+  change dirichlet.L.applyOn (Set.Icc (dirichlet.a) (dirichlet.b)) (X (n)) (x) +
     eigenvalues (dirichlet) (n) * dirichlet.w (x) * X (n) (x) = 0
   linarith
