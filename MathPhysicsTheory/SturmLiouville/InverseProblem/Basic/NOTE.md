@@ -6,14 +6,15 @@
 2. Form $M(x)$ and $r(x)$ as in (2) below.
 3. Solve $M(\alpha,\beta,\gamma)^{T}=r$ (Cramer, or read off coordinates).
 4. $p=p(a)\exp\int_a^x\alpha$, $q=p\beta$, $w=p\gamma$.
-5. Check with $n\ge3$, with signs ($p,w>0$, $q\le0$), and note the free scale $p(a)$.
+5. Check with $n\ge3$, and note the free scale $p(a)$.
 
 ### The method in general form
 
 **Data.** An interval $[a,b]$, Robin (e.g. Dirichlet) boundary conditions, eigenvalues $\lambda_0<\lambda_1<\lambda_2<\cdots$ and eigenfunctions $X_n\in C^2[a,b]$, $X_n\not\equiv 0$. They are the eigenpairs of some Sturm-Liouville problem.
 
-**Unknowns.** $p\in C^1$, $p>0$; $q\in C^0$, $q\le 0$; $w\in C^0$, $w>0$, with
+**Unknowns.** $p\in C^1$, $p>0$; $q\in C^0$; $w\in C^0$, $w>0$, with
 $$(p\,X_n')' + q\,X_n + \lambda_n\,w\,X_n = 0 \qquad (n = 0,1,2,\dots).$$
+The original problem also has $q\le0$ and boundary conditions, but the method and the uniqueness proof do not use either.
 
 The idea is that the equation looks like a differential equation for $p$, but is in fact a *linear algebraic* equation for the values of the coefficients at a point. Everything below is done step by step.
 
@@ -62,11 +63,11 @@ $$q = p\,\beta,\qquad w = p\,\gamma .$$
 
 #### Step 8. Check
 
-Any further eigenpair $(\lambda_n,X_n)$, $n\ge3$, must satisfy (1) with the computed $\alpha,\beta,\gamma$. For data that really come from a Sturm-Liouville problem this holds automatically (a useful test for noisy or suspect data). Also verify $p>0$, $w>0$, $q\le0$ and that $(p,q,w)$ reproduces the boundary conditions' eigenvalues.
+Any further eigenpair $(\lambda_n,X_n)$, $n\ge3$, must satisfy (1) with the computed $\alpha,\beta,\gamma$. For data that really come from a Sturm-Liouville problem this holds automatically (a useful test for noisy or suspect data). The recovered coefficients differ from the true ones only by the positive factor $p(a)/p_{\text{true}}(a)$ (see `solution_unique`), so $p>0$, $w>0$ and $q\le0$ hold automatically.
 
 #### Remarks
 
-* **Only $X_n$ and $\lambda_n$ are used**, together with $X_n',X_n''$ computed from them; the boundary conditions enter only through the fact that the data are eigenpairs.
+* **Only $X_n$ and $\lambda_n$ are used**, together with $X_n',X_n''$ computed from them. Neither the boundary conditions nor the sign condition $q\le0$ is needed, so the method works for any boundary conditions and for $q$ of any sign, as long as $\lambda_n$ and $X_n$ are the eigenvalues and eigenfunctions of the problem being recovered.
 * **Shortcut for hand computation.** $r=-X''$ is a vector in $\mathbb R^3$, and Cramer's rule says that $(\alpha,\beta,\gamma)$ are the coordinates of $r$ in the basis of the three columns of $M$. So if $-X_n''$ is visibly a combination $c_1X_n'+c_2X_n+c_3\lambda_nX_n$ with the *same* coefficients for all three $n$, then $(\alpha,\beta,\gamma)=(c_1,c_2,c_3)$ and no determinant has to be evaluated, one only needs $D\neq0$.
 * **Numerics.** The formulas are ill-conditioned near zeros of $D$ (in particular near the endpoints for Dirichlet conditions). Normalise $p$ at an interior point instead of $a$, or fit $(\alpha,\beta,\gamma)$ by least squares from more than three eigenpairs.
 
