@@ -32,15 +32,15 @@ Three unknowns need three equations; each eigenpair gives one. (More eigenpairs 
 
 Let $D=\det M$, and let $A,B,G$ be $D$ with the first, second, third *column* replaced by $r$:
 $$\alpha = \frac{A}{D},\qquad \beta=\frac{B}{D},\qquad \gamma=\frac{G}{D}\qquad\text{wherever } D(x)\neq 0 .$$
-The identities hold for *any* solution $(p,q,w)$ of the inverse problem, so they are necessary conditions: the solution cannot take other values. This note is a mathematical derivation; it is not formalized in Lean yet.
+The identities hold for *any* solution $(p,q,w)$ of the inverse problem, so they are necessary conditions: the solution cannot take other values. (The data must come from some solution; for arbitrary $X_n,\lambda_n$ nothing guarantees $D\ne0$ on a dense set, see step 5.) This note is a mathematical derivation; it is not formalized in Lean yet.
 
-#### Step 5. Why $D\ne0$ almost everywhere
+#### Step 5. Why $D\ne0$ on a dense set
 
-$D$ may vanish at isolated points (always at a boundary point where all $X_n=0$), but never on an interval (the argument is the one used for `solution_unique`). Where $X_n\ne0$,
+Cramer's rule needs $D\ne0$. For data coming from an actual solution $(p,q,w)$, $D$ does not vanish identically on any subinterval (the argument is the one used for `solution_unique`). Indeed, where $X_0,X_1,X_2\ne0$ (their zeros are simple, hence isolated),
 $$D = X_0X_1X_2\cdot\det\begin{pmatrix}u_0&1&\lambda_0\\u_1&1&\lambda_1\\u_2&1&\lambda_2\end{pmatrix},\qquad u_n = X_n'/X_n,$$
-so $D=0$ on an interval means that the points $(\lambda_n,u_n)$ lie on a line. But $m_n=p\,u_n$ satisfy the Riccati equation $m_n' = -(q+\lambda_n w) - m_n^2/p$. Differentiating the collinearity relation of the $m_n$ and using this equation gives $m_1=m_0$ on the interval and then $(\lambda_1-\lambda_0)w=0$, contradicting $w>0$.
+so $D=0$ on an interval means that the points $(\lambda_n,u_n)$ lie on a line: $m_n=p\,u_n=A+B\lambda_n$. Substituting into the Riccati equation $m_n' = -(q+\lambda_n w) - m_n^2/p$ gives a polynomial identity in $\lambda$ at three distinct points. Comparing coefficients gives $B=0$ and then $w=0$, contradicting $w>0$.
 
-So $\{D\ne0\}$ is dense in $(a,b)$, and the *continuous* functions $\alpha,\beta,\gamma$ are determined by their values there: at a zero of $D$ take the limit of $A/D$, $B/D$, $G/D$.
+So for data coming from an actual solution, $\{D\ne0\}$ is dense in $(a,b)$, and the *continuous* functions $\alpha,\beta,\gamma$ are determined by their values there: at a zero of $D$ take the limit of $A/D$, $B/D$, $G/D$.
 
 #### Step 6. Recover $p$ by one integration
 
@@ -77,7 +77,7 @@ $$\begin{pmatrix} \cos x & \sin x & \sin x\\ 2\cos 2x & \sin 2x & 4\sin 2x\\ 3\c
 $$A=0,\qquad B=0,\qquad G=D .$$
 A direct expansion (checked symbolically) gives
 $$D(x) = -16\sin^6 x .$$
-It is nonzero on $(0,\pi)$ and vanishes at the endpoints, as predicted in step 5. Hence for $0<x<\pi$
+It is nonzero on $(0,\pi)$ and vanishes at the endpoints (all $X_n=0$ there for Dirichlet conditions), consistent with step 5. Hence for $0<x<\pi$
 $$\alpha=\frac{0}{D}=0,\qquad\beta=\frac{0}{D}=0,\qquad\gamma=\frac{D}{D}=1 ,$$
 and by continuity these hold on all of $[0,\pi]$.
 
