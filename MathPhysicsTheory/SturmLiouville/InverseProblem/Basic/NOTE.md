@@ -1,5 +1,13 @@
 ## Solving the inverse problem: a solution method
 
+### Summary of the algorithm
+
+1. Take $(\lambda_n,X_n)$ for any three indices $n_0<n_1<n_2$ (e.g. $0,1,2$) and compute $X_n',X_n''$.
+2. Form $M(x)$ and $r(x)$ as in (2) below.
+3. Solve $M(\alpha,\beta,\gamma)^{T}=r$ (Cramer, or read off coordinates).
+4. $p=p(a)\exp\int_a^x\alpha$, $q=p\beta$, $w=p\gamma$.
+5. Check with $n\ge3$, with signs ($p,w>0$, $q\le0$), and note the free scale $p(a)$.
+
 ### The method in general form
 
 **Data.** An interval $[a,b]$, Robin (e.g. Dirichlet) boundary conditions, eigenvalues $\lambda_0<\lambda_1<\lambda_2<\cdots$ and eigenfunctions $X_n\in C^2[a,b]$, $X_n\not\equiv 0$. They are the eigenpairs of some Sturm-Liouville problem.
@@ -59,7 +67,7 @@ Any further eigenpair $(\lambda_n,X_n)$, $n\ge3$, must satisfy (1) with the comp
 #### Remarks
 
 * **Only $X_n$ and $\lambda_n$ are used**, together with $X_n',X_n''$ computed from them; the boundary conditions enter only through the fact that the data are eigenpairs.
-* **Shortcut for hand computation.** $r=-X''$ is a vector in $\mathbb R^3$, and Cramer's rule says that $(\alpha,\beta,\gamma)$ are the coordinates of $r$ in the basis of the three columns of $M$. So if $-X_n''$ is visibly a combination $c_1X_n'+c_2X_n+c_3\lambda_nX_n$ with the *same* coefficients for all three $n$, then $(\alpha,\beta,\gamma)=(c_1,c_2,c_3)$ and no determinant has to be evaluated, one only needs $D\neq0$. Both examples below use this.
+* **Shortcut for hand computation.** $r=-X''$ is a vector in $\mathbb R^3$, and Cramer's rule says that $(\alpha,\beta,\gamma)$ are the coordinates of $r$ in the basis of the three columns of $M$. So if $-X_n''$ is visibly a combination $c_1X_n'+c_2X_n+c_3\lambda_nX_n$ with the *same* coefficients for all three $n$, then $(\alpha,\beta,\gamma)=(c_1,c_2,c_3)$ and no determinant has to be evaluated, one only needs $D\neq0$.
 * **Numerics.** The formulas are ill-conditioned near zeros of $D$ (in particular near the endpoints for Dirichlet conditions). Normalise $p$ at an interior point instead of $a$, or fit $(\alpha,\beta,\gamma)$ by least squares from more than three eigenpairs.
 
 ### Example 1: the string, $p=1$, $q=0$, $w=1$
@@ -87,7 +95,27 @@ and by continuity these hold on all of $[0,\pi]$.
 
 **Step 8.** For $n=3$: $X_3''+0\cdot X_3'+0\cdot X_3+16\cdot1\cdot X_3=-16\sin4x+16\sin4x=0$. ✓ So the unique solution up to the factor $p(0)$ is $(p,q,w)=c\,(1,0,1)$, the string equation $X''+\lambda X=0$, as expected.
 
-### Example 2: non-constant coefficients, $p=x$, $q=0$, $w=1/x$
+### Example 2: the string with a potential, $p=1$, $q=-c$, $w=1$
+
+This example checks $\beta$, which is $0$ in examples 1 and 3. Take $c>0$ (so $q\le0$).
+
+**Data.** $X''+(\lambda-c)X=0$ on $[0,\pi]$ with $X(0)=X(\pi)=0$. The eigenfunctions are the same sines, and the eigenvalues are shifted:
+$$\lambda_n=(n+1)^2+c,\qquad X_n(x)=\sin\big((n+1)x\big).$$
+Use $n=0,1,2$, that is $\lambda=1+c,\,4+c,\,9+c$.
+
+**Step 3-4.** Now $-X_n''=k^2\sin kx=\lambda_nX_n-c\,X_n$, so $r=\text{col}_3-c\,\text{col}_2$ with the same coefficients in all three rows. Cramer's rule gives
+$$A=0,\qquad B=-c\,D,\qquad G=D,$$
+because $A$ has two equal columns, $B=\det(\text{col}_1,\ \text{col}_3-c\,\text{col}_2,\ \text{col}_3)=-c\,D$ and $G=\det(\text{col}_1,\text{col}_2,\text{col}_3-c\,\text{col}_2)=D$. Subtracting $c\,\text{col}_2$ from $\text{col}_3$ does not change the determinant, so $D=-16\sin^6x$ as in example 1 (checked numerically). Hence for $0<x<\pi$
+$$\alpha=0,\qquad\beta=-c,\qquad\gamma=1,$$
+and by continuity on $[0,\pi]$.
+
+**Step 6-7.** $p\equiv1$ (normalised), $q=p\beta=-c$, $w=p\gamma=1$: $\boxed{p\equiv1,\ q\equiv-c,\ w\equiv1}$.
+
+**Step 8.** For $n=3$: $X_3''+0\cdot X_3'-c\,X_3+(16+c)X_3=-16\sin4x+16\sin4x=0$. ✓
+
+### Example 3: non-constant coefficients, $p=x$, $q=0$, $w=1/x$
+
+This is example 1 after the substitution $t=\ln x$; it is here to show non-constant $\alpha,\gamma$ and normalisation of $p$ away from $0$.
 
 **Data.** On $[1,e^{\pi}]$ consider $(xX')'+\dfrac{\lambda}{x}X=0$ with $X(1)=X(e^\pi)=0$ (Euler-type problem). With $t=\ln x$ it becomes $X_{tt}+\lambda X=0$, $X(t{=}0)=X(t{=}\pi)=0$, so the eigenpairs are
 $$\lambda_n=(n+1)^2,\qquad X_n(x)=\sin\big((n+1)\ln x\big).$$
@@ -111,13 +139,3 @@ $$q=p\beta=0,\qquad w=p\gamma=x\cdot\frac1{x^2}=\frac1x,$$
 $\boxed{q\equiv0,\ w(x)=1/x}$, recovering exactly the original coefficients (up to the scale $p(1)$).
 
 **Step 8.** For $n=3$ ($\lambda=16$, $X=\sin4\ln x$): $X''+\frac1xX'+\frac{16}{x^2}X=0$ by the formula for $X_n''$ above. ✓
-
-A numerical run of steps 3-7 on a problem with genuinely variable $p,q,w$ ($p=1+x^2$, $q=-x$, $w=2+\sin3x$ on $[0,1]$, eigenpairs computed numerically, derivatives from the data only) recovered $\alpha,\beta,\gamma$ to about $10^{-9}$ and $p,q,w$ to about $10^{-6}$ to $10^{-8}$ away from the endpoints.
-
-### Summary of the algorithm
-
-1. Take $(\lambda_n,X_n)$ for any three indices $n_0<n_1<n_2$ (e.g. $0,1,2$) and compute $X_n',X_n''$.
-2. Form $M(x)$ and $r(x)$ as in (2).
-3. Solve $M(\alpha,\beta,\gamma)^{T}=r$ (Cramer, or read off coordinates).
-4. $p=p(a)\exp\int_a^x\alpha$, $q=p\beta$, $w=p\gamma$.
-5. Check with $n\ge3$, with signs ($p,w>0$, $q\le0$), and note the free scale $p(a)$.
