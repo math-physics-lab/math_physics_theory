@@ -39,6 +39,10 @@ of `Xₙ`) then follow from the theorems in `MathPhysicsTheory.SturmLiouville.Ei
 The solution is unique up to a positive constant factor (`solution_unique`); the lemmas for its
 proof are in `MathPhysicsTheory.SturmLiouville.InverseProblem.Uniqueness`.
 
+Most of the data is redundant: three eigenpairs already determine the solution, and the other
+eigenpairs follow from them. See `ReducedInverseProblem` and `InverseProblem.isSolution_iff_reduce`
+in `MathPhysicsTheory.SturmLiouville.InverseProblem.Reduction`.
+
 ## References
 
 * R. L. Herman, *Introduction to Partial Differential Equations*, §4.1
@@ -136,7 +140,11 @@ theorem solution_unique (I : InverseProblem) {p₁ q₁ p₂ q₂ w₁ w₂ : �
     ⟨hX (n), fun x hx => by
       have := h.2 (n) (x) (hx)
       linear_combination this⟩
-  exact proportional_of_eigenpairs (I.a_lt_b) (h₁.1) (h₂.1) (hlam) (hs (h₁)) (hs (h₂)) (hne)
+  -- Only the first three eigenpairs are used.
+  exact proportional_of_eigenpairs (I.a_lt_b) (h₁.1) (h₂.1)
+    (lam := fun i : Fin (3) => I.«λₙ» (i)) (X := fun i : Fin (3) => I.Xₙ (i))
+    (hlam.comp (Fin.val_strictMono)) (fun i => hs (h₁) (i)) (fun i => hs (h₂) (i))
+    (fun i => hne (i))
 
 end InverseProblem
 

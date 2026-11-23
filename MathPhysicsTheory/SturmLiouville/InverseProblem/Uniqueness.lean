@@ -222,15 +222,15 @@ theorem ratio_algebra {P q w l₀ l₁ l₂ u₀ u₁ u₂ : ℝ} (hP : 0 < P) (
   linarith
 
 /-- Core of the uniqueness proof: if two sets of coefficients `(L₁.p, L₁.q, w₁)` and
-`(L₂.p, L₂.q, w₂)` have the same three eigenpairs (with distinct eigenvalues), then `L₂.p / L₁.p`
-has zero derivative on `(a, b)`. -/
-private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ}
+`(L₂.p, L₂.q, w₂)` have the same three eigenpairs `(lam i, X i)`, `i : Fin 3`, with
+`lam 0 < lam 1 < lam 2`, then `L₂.p / L₁.p` has zero derivative on `(a, b)`. -/
+private theorem deriv_ratio_eq_zero {lam : Fin (3) → ℝ} {X : Fin (3) → ℝ → ℝ}
     (hA₁ : SturmLiouville.Assumptions (a) (b) (L₁) (w₁) (Ba) (Bb))
     (hA₂ : SturmLiouville.Assumptions (a) (b) (L₂) (w₂) (Ba) (Bb))
     (hlam : StrictMono (lam))
-    (h₁ : ∀ n, L₁.IsSolution (a) (b) (w₁) (lam (n)) (X (n)))
-    (h₂ : ∀ n, L₂.IsSolution (a) (b) (w₂) (lam (n)) (X (n)))
-    (hne : ∀ n, ∃ x ∈ Icc (a) (b), X (n) (x) ≠ 0) :
+    (h₁ : ∀ i, L₁.IsSolution (a) (b) (w₁) (lam (i)) (X (i)))
+    (h₂ : ∀ i, L₂.IsSolution (a) (b) (w₂) (lam (i)) (X (i)))
+    (hne : ∀ i, ∃ x ∈ Icc (a) (b), X (i) (x) ≠ 0) :
     ∀ x ∈ Ioo (a) (b), deriv (fun t => L₂.p (t) / L₁.p (t)) (x) = 0 := by
   set c : ℝ → ℝ := fun t => L₂.p (t) / L₁.p (t) with hcdef
   have hcd : ContDiffOn (ℝ) (1) (c) (Ioo (a) (b)) :=
@@ -242,7 +242,7 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
   push Not at hcon
   obtain ⟨x₀, hx₀, hne0⟩ := hcon
   have hp : ∀ x ∈ Ioo (a) (b), 0 < L₁.p (x) := fun x hx => hA₁.p_pos (x) (Ioo_subset_Icc_self (hx))
-  have hXne : ∀ n, ∀ x ∈ Ioo (a) (b), deriv (c) (x) ≠ 0 → X (n) (x) ≠ 0 := by
+  have hXne : ∀ n : Fin (3), ∀ x ∈ Ioo (a) (b), deriv (c) (x) ≠ 0 → X (n) (x) ≠ 0 := by
     intro n x hx hcx hXx
     have R := relation (hA₁) (hA₂) (h₁ (n)) (h₂ (n)) (hx)
     rw [hXx, mul_zero, add_zero] at R
@@ -255,11 +255,11 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
   set U : Set (ℝ) := Ioo (a) (b) ∩ deriv (c) ⁻¹' {0}ᶜ with hU
   have hUopen : IsOpen (U) := hcont.isOpen_inter_preimage (isOpen_Ioo) (isOpen_compl_singleton)
   have hx₀U : x₀ ∈ U := ⟨hx₀, hne0⟩
-  set m : ℕ → ℝ → ℝ := fun n t => L₁.p (t) * deriv (X (n)) (t) / X (n) (t) with hm
-  have hmd : ∀ n, ∀ x ∈ U, HasDerivAt (m (n))
+  set m : Fin (3) → ℝ → ℝ := fun n t => L₁.p (t) * deriv (X (n)) (t) / X (n) (t) with hm
+  have hmd : ∀ n : Fin (3), ∀ x ∈ U, HasDerivAt (m (n))
       (-(L₁.q (x) + lam (n) * w₁ (x)) - (m (n) (x)) ^ 2 / L₁.p (x)) (x) := fun n x hx =>
     hasDerivAt_ratio (hA₁) (h₁ (n)) (hx.1) (hXne (n) (x) (hx.1) (hx.2))
-  have hrel : ∀ n, ∀ x ∈ U, deriv (c) (x) * m (n) (x) =
+  have hrel : ∀ n : Fin (3), ∀ x ∈ U, deriv (c) (x) * m (n) (x) =
       -((L₂.q (x) - c (x) * L₁.q (x)) + lam (n) * (w₂ (x) - c (x) * w₁ (x))) := by
     intro n x hx
     have R := relation (hA₁) (hA₂) (h₁ (n)) (h₂ (n)) (hx.1)
@@ -287,7 +287,7 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
         (fun t => (lam (2) - lam (0)) * (m (1) (t) - m (0) (t))) := by
       filter_upwards [hUopen.mem_nhds (hx)] with t ht using hprop (t) (ht)
     have E := H1.unique (H2.congr_of_eventuallyEq (hev))
-    exact ratio_algebra (hp (x) (hx.1)) (hlam (by norm_num)) (hlam (by norm_num))
+    exact ratio_algebra (hp (x) (hx.1)) (hlam (by decide)) (hlam (by decide))
       (hprop (x) (hx)) (E)
   -- Contradiction at `x₀`: `m 1 - m 0` vanishes near `x₀`, so its derivative vanishes, but the
   -- Riccati equation gives `-(λ₁ - λ₀) w`.
@@ -301,19 +301,21 @@ private theorem deriv_ratio_eq_zero {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ
   have H4 := H3.unique ((hasDerivAt_const (x₀) (0 : ℝ)).congr_of_eventuallyEq (hev0))
   rw [hd1 (x₀) (hx₀U)] at H4
   have hw := (hA₁.w_pos (x₀) (Ioo_subset_Icc_self (hx₀))).ne'
-  have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by norm_num))).ne'
+  have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by decide))).ne'
   have : (lam (1) - lam (0)) * w₁ (x₀) = 0 := by linarith
   exact (mul_ne_zero (hl) (hw)) (this)
 
-/-- Two sets of coefficients with the same three eigenpairs (distinct eigenvalues) are proportional
-on `[a, b]` by a positive constant. -/
-theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X : ℕ → ℝ → ℝ}
+/-- Two sets of coefficients with the same three eigenpairs `(lam i, X i)`, `i : Fin 3`, with
+`lam 0 < lam 1 < lam 2`, are proportional on `[a, b]` by a positive constant. Only these three
+pairs are used: not the boundary conditions, not the sign of `q`, and not the indices of the
+eigenvalues in the spectrum. -/
+theorem proportional_of_eigenpairs (hab : a < b) {lam : Fin (3) → ℝ} {X : Fin (3) → ℝ → ℝ}
     (hA₁ : SturmLiouville.Assumptions (a) (b) (L₁) (w₁) (Ba) (Bb))
     (hA₂ : SturmLiouville.Assumptions (a) (b) (L₂) (w₂) (Ba) (Bb))
     (hlam : StrictMono (lam))
-    (h₁ : ∀ n, L₁.IsSolution (a) (b) (w₁) (lam (n)) (X (n)))
-    (h₂ : ∀ n, L₂.IsSolution (a) (b) (w₂) (lam (n)) (X (n)))
-    (hne : ∀ n, ∃ x ∈ Icc (a) (b), X (n) (x) ≠ 0) :
+    (h₁ : ∀ i, L₁.IsSolution (a) (b) (w₁) (lam (i)) (X (i)))
+    (h₂ : ∀ i, L₂.IsSolution (a) (b) (w₂) (lam (i)) (X (i)))
+    (hne : ∀ i, ∃ x ∈ Icc (a) (b), X (i) (x) ≠ 0) :
     ∃ c : ℝ, 0 < c ∧ ∀ x ∈ Icc (a) (b),
       L₂.p (x) = c * L₁.p (x) ∧ L₂.q (x) = c * L₁.q (x) ∧ w₂ (x) = c * w₁ (x) := by
   have hmem : (a + b) / 2 ∈ Ioo (a) (b) := ⟨by linarith, by linarith⟩
@@ -337,7 +339,7 @@ theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X : ℕ �
     field_simp [hp₁ (x) (hx)] at h'
     linarith
   -- the combination `(L₂.q - k L₁.q) + λₙ (w₂ - k w₁)` vanishes on `(a, b)` for `n = 0, 1`
-  have hg : ∀ n, ∀ x ∈ Ioo (a) (b),
+  have hg : ∀ n : Fin (3), ∀ x ∈ Ioo (a) (b),
       ((L₂.q (x) - k * L₁.q (x)) + lam (n) * (w₂ (x) - k * w₁ (x))) = 0 := by
     intro n
     refine eq_zero_of_mul_eq_zero (hA₁) (h₁ (n)) (hne (n)) (g := fun x =>
@@ -356,7 +358,7 @@ theorem proportional_of_eigenpairs (hab : a < b) {lam : ℕ → ℝ} {X : ℕ �
     intro x hx
     have h0 := hg (0) (x) (hx)
     have h1 := hg (1) (x) (hx)
-    have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by norm_num))).ne'
+    have hl : lam (1) - lam (0) ≠ 0 := (sub_pos.mpr (hlam (by decide))).ne'
     have : (lam (1) - lam (0)) * (w₂ (x) - k * w₁ (x)) = 0 := by linarith
     have := (mul_eq_zero.mp (this)).resolve_left (hl)
     linarith
