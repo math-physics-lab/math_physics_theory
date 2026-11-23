@@ -6,5 +6,6 @@ public import MathPhysicsTheory.SturmLiouville.InverseProblem.Basic
 public import MathPhysicsTheory.SturmLiouville.InverseProblem.Reduction
 public import MathPhysicsTheory.SturmLiouville.InverseProblem.SolutionMethod
 public import MathPhysicsTheory.SturmLiouville.InverseProblem.Uniqueness
+public import MathPhysicsTheory.SturmLiouville.InverseSpectral
 public import MathPhysicsTheory.SturmLiouville.Operator
 public import MathPhysicsTheory.SturmLiouville.Problem
